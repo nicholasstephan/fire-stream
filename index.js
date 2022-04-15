@@ -1,0 +1,1 @@
+export { initializeApp } from './src/firebase.js';

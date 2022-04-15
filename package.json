@@ -1,0 +1,30 @@
+{
+  "name": "fire-stream",
+  "version": "1.0.0",
+  "description": "Ride a stream of fire.",
+  "main": "index.js",
+  "type": "module",
+  "exports": {
+    "./*": "./src/*.js"
+  },
+  "scripts": {
+    "test": "firebase emulators:exec 'mocha' --project demo-fire-stream --only database,firestore"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nicholasstephan/fire-stream.git"
+  },
+  "author": "Nicholas Stephan",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/nicholasstephan/fire-stream/issues"
+  },
+  "homepage": "https://github.com/nicholasstephan/fire-stream#readme",
+  "peerDependencies": {
+    "firebase": "^9.6.11"
+  },
+  "devDependencies": {
+    "firebase-tools": "^10.6.0",
+    "mocha": "^9.2.2"
+  }
+}
