@@ -5,6 +5,13 @@ import { getDatabase, ref, onValue, off, get, set, update, push, remove, connect
 import { getFirestore, connectFirestoreEmulator, initializeFirestore, doc, collection, query, setDoc, getDoc, getDocs, addDoc } from "firebase/firestore";
 
 import firestore from "./src/firestore/index.js";
+import database from "./src/database/index.js";
+
+const wait = async (timeout, ...result) => {
+  return new Promise(resolve => {
+    setTimeout(resolve, timeout, ...result);
+  });
+};
 
 initializeApp({
   projectId: process.env.GCLOUD_PROJECT,
@@ -31,8 +38,6 @@ describe('Sanity', function() {
 
   it('can read from and write to database', async function() {
     const testValue = "Come on, baby, light my fire";
-
-    this.timeout(5000);
 
     let loc = ref(getDatabase(), '/door');
 
@@ -370,6 +375,52 @@ describe('Firestore Collection Writes', function() {
 
     assert.equal(data.length, 1);
     assert.equal(data[0].line, line);
+
+  });
+
+});
+
+describe('Firebase Database', function() {
+
+  it('can read a value', async function() {
+    
+    const value = "I'm a firestarter, twisted firestarter";
+
+    await set(ref(getDatabase(), "prodegy"), value);
+
+    let data = await database("prodegy");
+
+    assert.equal(data, value);
+  
+  });
+
+  it('can read value in a stream', async function() {
+        
+    const value1 = "Goodness Gracious";
+    const value2 = "Great Balls of Fire!";
+
+    const callback = sinon.spy();
+
+    database("lewis").subscribe(callback);
+
+    await set(ref(getDatabase(), "lewis"), value1);
+    await set(ref(getDatabase(), "lewis"), value2);
+
+    assert.equal(callback.callCount, 2);
+    assert.equal(callback.getCall(0).args[0], value1);
+    assert.equal(callback.getCall(1).args[0], value2);
+  
+  });
+
+  it('can write a value', async function() {
+
+    const value = "Fight fire with fire";
+    
+    await database("metallica").update(value);  
+    
+    let snap = await get(ref(getDatabase(), "metallica"));
+    
+    assert.equal(snap.val(), value);
 
   });
 

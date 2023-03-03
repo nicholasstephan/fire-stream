@@ -3,7 +3,6 @@
  * @param {string} url - the url of the document or collection
  * @param {object} options - options for the document or collection
  * @param {any} options.startWith - an initial value
- * @param {number} options.debounce - debounce commits to server
  * @param {number} options.limit - limit collection response lengths
  * @param {string} options.orderBy - order collection responses by field
  * @param {string} options.direction - if `orderBy` is given, order in this 
@@ -19,7 +18,6 @@ import { serverTimestamp, arrayUnion, arrayRemove, Timestamp } from "firebase/fi
 
 let defaultOptions = {
   startWith: undefined,
-  debounce: 500,
   limit: null,
   orderBy: null,
   direction: 'asc',

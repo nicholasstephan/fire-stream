@@ -15,7 +15,6 @@ export default function doc(options) {
 
   let subscribers = [];
   let value = options.startWith ? { ...options.startWith } : undefined;
-
   let isLoaded = false;
   let offSnapshot = null;
 
@@ -70,10 +69,13 @@ export default function doc(options) {
     }, 500);
   }
 
-  function set(val) {
+  async function set(val) {
     if(!isLoaded) {
-      console.warn(`WARNING: You're trying to set a document (${url}) before it has been loaded.`);
-      return;
+      let existingValue = await getDoc(ref);
+      if(existingValue.exists) {
+        console.warn(`WARNING: You're trying to set a document (${url}) before it has been loaded.`);
+        return;
+      }
     }
     let {id, ...data} = val;
     return updateDoc(ref, data);

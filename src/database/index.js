@@ -12,41 +12,55 @@ import {
 
 
 const defaultOptions = {
-  startWith: null, // an initial value
-  debounce: 500, // debounce commits to server
+  startWith: null, // an initial value to start with
 };
 
 
-export default function(url, options={}) {
+export default function(url, options = {}) {
 
-  if(url.includes('undefined') || url.includes('null')) {
-    return {subscribe:() => () => options.startWith};
+  if(typeof url == 'string') {
+    options.url = url;
   }
-
+  else {
+    options = url;
+  }
   options = {...defaultOptions, ...options};
 
+  if(options.url.includes('undefined') || options.url.includes('null')) {
+    return {
+      subscribe: callback => callback(options.startWith),
+      then: callback => callback(options.startWith),
+      set: () => null,
+      update: () => null,
+      remove: () => null,
+      push: () => null,
+    };
+  }
+
   const database = getDatabase();
-  const ref = databaseRef(database, url);
+  const ref = databaseRef(database, options.url);
+
 
   let subscribers = [];
   let value = options.startWith;
+  let isLoaded = false;
 
-  let emit = () => {
-    subscribers.forEach(callback => callback(value));
-  };
-
-  let handler = snapshot => {
-    value = snapshot.val();
-    emit();
-  };
-
+  
   let subscribe = callback => {
+    let handler = snapshot => {
+      value = snapshot.val();
+      isLoaded = true;
+      subscribers.forEach(callback => callback(value));
+    };
+
     if(!subscribers.length) {
       onValue(ref, handler);
     }
 
     subscribers.push(callback);
-    callback(value);
+    if(value) {
+      callback(value);
+    }
 
     // Delaying the unsubscribe here so that 
     // if the next loaded page uses the same data
@@ -59,26 +73,33 @@ export default function(url, options={}) {
     }, 5000);
   };
 
-  let setTimer;
-  let set = val => {
-    value = val;
-    emit();
-    clearTimeout(setTimer);
-    setTimer = setTimeout(() => setValue(ref, value), options.debounce);
+  let set = async val => {
+    if(!isLoaded) {
+      let existingValue = await getValue(ref);
+      if(existingValue.exists()) {
+        console.warn(`WARNING: You're trying to set a value (${options.url}) before it has been loaded.`);
+        return;
+      }
+    }
+    return setValue(ref, val);
   };
 
-  let updateTimer;
   let update = val => {
-    value = {...value, ...val};
-    emit();
-    clearTimeout(updateTimer);
-    updateTimer = setTimeout(() => updateValue(ref, value), options.debounce);
+    if(typeof val == 'string') {
+      return set(val);
+    }
+    else {
+      updateValue(ref, val);
+    }
+  };
+
+  let overwrite = val => {
+    value = val;
+    return setValue(ref, value);
   };
 
   let remove = () => {
     removeValue(ref);
-    value = undefined;
-    emit();
   };
 
   let push = val => {
@@ -90,10 +111,14 @@ export default function(url, options={}) {
       callback(value);
       return;
     }
+
     let snap = await getValue(ref);
-    callback(snap.val() || options.startWith);
+    value = snap.val();
+
+    isLoaded = true;
+    callback(value);
   };
 
-  return {subscribe, set, update, remove, push, then};
+  return {subscribe, set, update, overwrite, remove, push, then};
 
 }

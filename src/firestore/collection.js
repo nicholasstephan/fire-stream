@@ -37,7 +37,6 @@ export default function collection(options={}) {
 
   let subscribers = [];
   let value = options.startWith ? [...options.startWith] : undefined;
-
   let isLoaded = false;
   let offSnapshot = null;
 
