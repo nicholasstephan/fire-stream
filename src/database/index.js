@@ -28,7 +28,10 @@ export default function(url, options = {}) {
 
   if(options.url.includes('undefined') || options.url.includes('null')) {
     return {
-      subscribe: callback => callback(options.startWith),
+      subscribe: callback => {
+        callback(options.startWith);
+        return () => null;
+      },
       then: callback => callback(options.startWith),
       set: () => null,
       update: () => null,
