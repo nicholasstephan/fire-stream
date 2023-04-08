@@ -5,8 +5,8 @@
   "type": "module",
   "main": "index.js",
   "exports": {
-    "database": "./src/database/index.js",
-    "firestore": "./src/firestore/index.js"
+    "./database": "./src/database/index.js",
+    "./firestore": "./src/firestore/index.js"
   },
   "scripts": {
     "test": "firebase emulators:exec 'mocha' --project demo-fire-stream --only database,firestore"
