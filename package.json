@@ -1,11 +1,12 @@
 {
   "name": "fire-stream",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Ride a stream of fire.",
-  "main": "index.js",
   "type": "module",
+  "main": "index.js",
   "exports": {
-    "./*": "./src/*.js"
+    "database": "./src/database/index.js",
+    "firestore": "./src/firestore/index.js"
   },
   "scripts": {
     "test": "firebase emulators:exec 'mocha' --project demo-fire-stream --only database,firestore"
