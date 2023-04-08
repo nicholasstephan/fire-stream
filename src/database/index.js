@@ -106,7 +106,8 @@ export default function(url, options = {}) {
   };
 
   let push = val => {
-    pushValue(ref, val);
+    let res = pushValue(ref, val);
+    return res.key;
   };
 
   let then = async callback => {
