@@ -16,7 +16,7 @@ const defaultOptions = {
 };
 
 
-export default function(url, options = {}) {
+let res = function(url, options = {}) {
 
   if(typeof url == 'string') {
     options.url = url;
@@ -80,7 +80,7 @@ export default function(url, options = {}) {
     if(!isLoaded) {
       let existingValue = await getValue(ref);
       if(existingValue.exists()) {
-        console.warn(`WARNING: You're trying to set a value (${options.url}) before it has been loaded.`);
+        console.warn(`WARNING: You're trying to set a value (${options.url}) before it has been loaded. If you're intentially doing this, use 'overwrite' instead.`);
         return;
       }
     }
@@ -126,3 +126,7 @@ export default function(url, options = {}) {
   return {subscribe, set, update, overwrite, remove, push, then};
 
 }
+
+res.createId = () => databaseRef(getDatabase()).push().key;
+
+export default res;
