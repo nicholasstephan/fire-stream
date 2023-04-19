@@ -73,15 +73,10 @@ export default function collection(options={}) {
   }
 
   function unsubscribe(callback) {
-    // Delaying the unsubscribe here so that if the next loaded page 
-    // uses the same data firebase hasn't already dumpted the memory. 
-    // Prevents flashing as the data is re-loaded from the database.
-    setTimeout(() => {
-      subscribers = subscribers.filter(c => c !== callback);
-      if (!subscribers.length) {
-        offSnapshot();
-      }
-    }, 500);
+    subscribers = subscribers.filter(c => c !== callback);
+    if (!subscribers.length) {
+      offSnapshot();
+    }
   }
 
   function add(data={}) {

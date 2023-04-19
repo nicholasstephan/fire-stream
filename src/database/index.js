@@ -65,15 +65,12 @@ let res = function(url, options = {}) {
       callback(value);
     }
 
-    // Delaying the unsubscribe here so that 
-    // if the next loaded page uses the same data
-    // firebase hasn't already dumpted the memory.
-    // Prevents flashing as the data is re-loaded
-    // from the database.
-    return () => setTimeout(() => {
+    // TODO: This causes issues with svelte. 
+    // replace with internal cache. 
+    return () => {
       subscribers = subscribers.filter(cb => cb != callback);
       if(!subscribers.length) offValue(ref, 'value', handler)
-    }, 5000);
+    };
   };
 
   let set = async val => {
