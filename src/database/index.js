@@ -3,10 +3,7 @@ import {
   ref as databaseRef, 
   query, 
   orderByChild,
-  orderByKey,
-  orderByValue,
   equalTo,
-  limitToFirst,
   limitToLast,
   onValue, 
   off as offValue,
@@ -48,29 +45,36 @@ let res = function(url, options = {}) {
   }
 
   const database = getDatabase();
-  let filters = [databaseRef(database, options.url)];
-  if(options.orderByChild) {
-    filters.push(orderByChild(options.orderByChild));
+  let ref = databaseRef(database, url);
+
+
+  let constraints = [];
+  if(options.where) {
+    let [field, operator, value] = options.where;
+    constraints.push( orderByChild(field) );
+    if(operator == "==") {  
+      constraints.push( equalTo(value) );
+    }
+    if(operator == "<") {
+      constraints.push( startAt(value) );
+    }
+    if(operator == ">") {
+      constraints.push( endAt(value) );
+    }
   }
-  else if(options.orderByKey) {
-    filters.push(orderByKey());
+  else if(options.orderBy) {
+    constraints.push( orderByChild(options.orderBy) );
   }
-  else if(options.orderByValue) {
-    filters.push(orderByValue());
+  if(options.limit) {
+    constraints.push( limitToLast(options.limit) );
+  }
+  if(constraints.length) {
+    ref = query(ref, ...constraints);
   }
 
-  if(options.equalTo) {
-    filters.push(equalTo(options.equalTo));
-  }
-  
-  if(options.limitToFirst) {
-    filters.push(limitToFirst(options.limitToFirst));
-  }
-  else if(options.limitToLast) {
-    filters.push(limitToLast(options.limitToLast));
-  }
 
-  const ref = query(...filters)
+  // Manage subscriptions.
+
   let subscribers = [];
   let value = options.startWith;
   let isLoaded = false;
