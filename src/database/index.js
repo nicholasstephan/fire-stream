@@ -45,7 +45,7 @@ let res = function(url, options = {}) {
   }
 
   const database = getDatabase();
-  let ref = databaseRef(database, url);
+  let ref = databaseRef(database, options.url);
 
 
   let constraints = [];
