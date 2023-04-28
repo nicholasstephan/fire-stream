@@ -5,7 +5,7 @@ import {
   orderByChild,
   orderByKey,
   orderByValue,
-  equalsTo,
+  equalTo,
   limitToFirst,
   limitToLast,
   onValue, 
@@ -60,7 +60,7 @@ let res = function(url, options = {}) {
   }
 
   if(options.equalTo) {
-    filters.push(equalsTo(options.equalTo));
+    filters.push(equalTo(options.equalTo));
   }
   
   if(options.limitToFirst) {
