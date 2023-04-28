@@ -1,6 +1,10 @@
 import { 
   getDatabase, 
   ref as databaseRef, 
+  query, 
+  orderByChild,
+  orderByKey,
+  orderByValue,
   onValue, 
   off as offValue,
   get as getValue,
@@ -41,9 +45,29 @@ let res = function(url, options = {}) {
   }
 
   const database = getDatabase();
-  const ref = databaseRef(database, options.url);
+  let filters = [databaseRef(database, options.url)];
+  if(options.orderByChild) {
+    filters.push(orderByChild(options.orderByChild));
+  }
+  else if(options.orderByKey) {
+    filters.push(orderByKey());
+  }
+  else if(options.orderByValue) {
+    filters.push(orderByValue());
+  }
 
+  if(options.equalTo) {
+    filters.push(equalsTo(options.equalTo));
+  }
+  
+  if(options.limitToFirst) {
+    filters.push(limitToFirst(options.limitToFirst));
+  }
+  else if(options.limitToLast) {
+    filters.push(limitToLast(options.limitToLast));
+  }
 
+  const ref = query(...filters)
   let subscribers = [];
   let value = options.startWith;
   let isLoaded = false;
