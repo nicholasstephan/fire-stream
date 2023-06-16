@@ -5,6 +5,7 @@ import {
   orderByChild,
   equalTo,
   limitToLast,
+  limitToFirst,
   onValue, 
   off as offValue,
   get as getValue,
@@ -19,6 +20,17 @@ const defaultOptions = {
   startWith: null, // an initial value to start with
 };
 
+export const noop = {
+  subscribe: callback => {
+    callback(options.startWith);
+    return () => null;
+  },
+  then: callback => callback(options.startWith),
+  set: () => null,
+  update: () => null,
+  remove: () => null,
+  push: () => null,
+};
 
 let res = function(url, options = {}) {
 
@@ -31,17 +43,7 @@ let res = function(url, options = {}) {
   options = {...defaultOptions, ...options};
 
   if(options.url.includes('undefined') || options.url.includes('null')) {
-    return {
-      subscribe: callback => {
-        callback(options.startWith);
-        return () => null;
-      },
-      then: callback => callback(options.startWith),
-      set: () => null,
-      update: () => null,
-      remove: () => null,
-      push: () => null,
-    };
+    return noop;
   }
 
   const database = getDatabase();
@@ -67,6 +69,9 @@ let res = function(url, options = {}) {
   }
   if(options.limit) {
     constraints.push( limitToLast(options.limit) );
+  }
+  if(options.limitToFirst) {
+    constraints.push( limitToFirst(options.limitToFirst) );
   }
   if(constraints.length) {
     ref = query(ref, ...constraints);
@@ -154,7 +159,5 @@ let res = function(url, options = {}) {
   return {subscribe, set, update, overwrite, remove, push, then};
 
 }
-
-res.createId = () => databaseRef(getDatabase()).push().key;
 
 export default res;
