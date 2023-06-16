@@ -362,7 +362,6 @@ describe('Firestore Collection Reads', function() {
 
 });
 
-
 describe('Firestore Collection Writes', function() {
 
   it('add a document', async function() {

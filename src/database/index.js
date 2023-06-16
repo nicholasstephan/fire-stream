@@ -88,6 +88,9 @@ let res = function(url, options = {}) {
   let subscribe = callback => {
     let handler = snapshot => {
       value = snapshot.val();
+      if(value == null && options.startWith != null) {
+        value = options.startWith;
+      }
       isLoaded = true;
       subscribers.forEach(callback => callback(value));
     };
