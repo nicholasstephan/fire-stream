@@ -393,6 +393,35 @@ describe('Firebase Database', function() {
   
   });
 
+  it('uses startWith option', async function() { 
+    const value = {
+      line1: "You know that it would be untrue", 
+      line2: "You know that I would be a liar"
+    };
+
+    const startWith = {
+      artist: "The Doors"
+    };
+
+    const callback = sinon.spy();
+
+    await set(ref(getDatabase(), "doors2"), value);
+
+    await new Promise(resolve => {
+      let count = 0;
+      database({url:"doors2", startWith}).subscribe((res) => {
+        callback(res);
+        if(++count == 2) {
+          resolve();
+        }
+      });
+    });
+
+    assert.deepStrictEqual(callback.getCall(0).args[0], startWith);
+    assert.deepStrictEqual(callback.getCall(1).args[0], {...startWith, ...value});
+
+  });
+
   it('can read value in a stream', async function() {
         
     const value1 = "Goodness Gracious";

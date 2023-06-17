@@ -17,7 +17,12 @@ import {
 
 
 const defaultOptions = {
-  startWith: null, // an initial value to start with
+  // An initial value to return before the data is loaded, 
+  // or if the data is null. 
+  // If both the data and startWith are objects, the data 
+  // will be merged with startWith to continue supplying
+  // default values. 
+  startWith: null, 
 };
 
 export const noop = {
@@ -90,6 +95,9 @@ let res = function(url, options = {}) {
       value = snapshot.val();
       if(value == null && options.startWith != null) {
         value = options.startWith;
+      }
+      if(typeof value == 'object' && typeof options.startWith == 'object') {
+        value = {...options.startWith, ...value};
       }
       isLoaded = true;
       subscribers.forEach(callback => callback(value));
