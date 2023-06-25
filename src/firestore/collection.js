@@ -88,6 +88,7 @@ export default function collection(options={}) {
     subscribe, 
     unsubscribe, 
     add, 
+    push: add,
   };
 
 }

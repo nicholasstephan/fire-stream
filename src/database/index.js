@@ -31,10 +31,12 @@ export const noop = {
     return () => null;
   },
   then: callback => callback(options.startWith),
+  get: () => null,
   set: () => null,
   update: () => null,
   remove: () => null,
   push: () => null,
+  add: () => null,
 };
 
 let res = function(url, options = {}) {
@@ -53,7 +55,6 @@ let res = function(url, options = {}) {
 
   const database = getDatabase();
   let ref = databaseRef(database, options.url);
-
 
   let constraints = [];
   if(options.where) {
@@ -82,13 +83,11 @@ let res = function(url, options = {}) {
     ref = query(ref, ...constraints);
   }
 
-
   // Manage subscriptions.
 
   let subscribers = [];
   let value = options.startWith;
   let isLoaded = false;
-
   
   let subscribe = callback => {
     let handler = snapshot => {
@@ -118,6 +117,10 @@ let res = function(url, options = {}) {
       subscribers = subscribers.filter(cb => cb != callback);
       if(!subscribers.length) offValue(ref, 'value', handler)
     };
+  };
+
+  let get = () => {
+    return value;
   };
 
   let set = async val => {
@@ -167,7 +170,17 @@ let res = function(url, options = {}) {
     callback(value);
   };
 
-  return {subscribe, set, update, overwrite, remove, push, then};
+  return {
+    subscribe, 
+    get,
+    set, 
+    update, 
+    overwrite, 
+    remove, 
+    push, 
+    add: push,
+    then
+  };
 
 }
 
