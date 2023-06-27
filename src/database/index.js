@@ -125,7 +125,7 @@ let res = function(url, options = {}) {
       subscribers = [];
     }
     if(!subscribers.length) {
-      offValue(ref, 'value', handler);
+      offValue(ref, 'value');
     }
   };
 
