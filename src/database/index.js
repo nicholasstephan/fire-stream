@@ -30,6 +30,7 @@ export const noop = {
     callback(options.startWith);
     return () => null;
   },
+  unsubscribe: () => null,
   then: callback => callback(options.startWith),
   get: () => null,
   set: () => null,
@@ -113,10 +114,19 @@ let res = function(url, options = {}) {
 
     // TODO: This causes issues with svelte. 
     // replace with internal cache. 
-    return () => {
+    return () => unsubscribe(callback);
+  };
+
+  let unsubscribe = callback => {
+    if(callback){
       subscribers = subscribers.filter(cb => cb != callback);
-      if(!subscribers.length) offValue(ref, 'value', handler)
-    };
+    }
+    else {
+      subscribers = [];
+    }
+    if(!subscribers.length) {
+      offValue(ref, 'value', handler);
+    }
   };
 
   let get = () => {
