@@ -1,12 +1,12 @@
-import { 
-  getDatabase, 
-  ref as databaseRef, 
-  query, 
+import {
+  getDatabase,
+  ref as databaseRef,
+  query,
   orderByChild,
   equalTo,
   limitToLast,
   limitToFirst,
-  onValue, 
+  onValue,
   off as offValue,
   get as getValue,
   set as setValue,
@@ -22,7 +22,7 @@ const defaultOptions = {
   // If both the data and startWith are objects, the data 
   // will be merged with startWith to continue supplying
   // default values. 
-  startWith: null, 
+  startWith: null,
 };
 
 export const noop = {
@@ -40,17 +40,21 @@ export const noop = {
   add: () => null,
 };
 
-let res = function(url, options = {}) {
+let res = function (url, options = {}) {
 
-  if(typeof url == 'string') {
+  if (typeof url == 'string') {
     options.url = url;
   }
   else {
     options = url;
   }
-  options = {...defaultOptions, ...options};
+  options = { ...defaultOptions, ...options };
 
-  if(options.url.includes('undefined') || options.url.includes('null')) {
+  if (
+    options.url.includes('undefined') || 
+    options.url.includes('null') || 
+    options.url.includes('//')
+  ) {
     return noop;
   }
 
@@ -58,29 +62,29 @@ let res = function(url, options = {}) {
   let ref = databaseRef(database, options.url);
 
   let constraints = [];
-  if(options.where) {
+  if (options.where) {
     let [field, operator, value] = options.where;
-    constraints.push( orderByChild(field) );
-    if(operator == "==") {  
-      constraints.push( equalTo(value) );
+    constraints.push(orderByChild(field));
+    if (operator == "==") {
+      constraints.push(equalTo(value));
     }
-    if(operator == "<") {
-      constraints.push( startAt(value) );
+    if (operator == "<") {
+      constraints.push(startAt(value));
     }
-    if(operator == ">") {
-      constraints.push( endAt(value) );
+    if (operator == ">") {
+      constraints.push(endAt(value));
     }
   }
-  else if(options.orderBy) {
-    constraints.push( orderByChild(options.orderBy) );
+  else if (options.orderBy) {
+    constraints.push(orderByChild(options.orderBy));
   }
-  if(options.limit) {
-    constraints.push( limitToLast(options.limit) );
+  if (options.limit) {
+    constraints.push(limitToLast(options.limit));
   }
-  if(options.limitToFirst) {
-    constraints.push( limitToFirst(options.limitToFirst) );
+  if (options.limitToFirst) {
+    constraints.push(limitToFirst(options.limitToFirst));
   }
-  if(constraints.length) {
+  if (constraints.length) {
     ref = query(ref, ...constraints);
   }
 
@@ -89,26 +93,26 @@ let res = function(url, options = {}) {
   let subscribers = [];
   let value = options.startWith;
   let isLoaded = false;
-  
+
   let subscribe = callback => {
     let handler = snapshot => {
       value = snapshot.val();
-      if(value == null && options.startWith != null) {
+      if (value == null && options.startWith != null) {
         value = options.startWith;
       }
-      if(typeof value == 'object' && typeof options.startWith == 'object') {
-        value = {...options.startWith, ...value};
+      if (typeof value == 'object' && typeof options.startWith == 'object') {
+        value = { ...options.startWith, ...value };
       }
       isLoaded = true;
       subscribers.forEach(callback => callback(value));
     };
 
-    if(!subscribers.length) {
+    if (!subscribers.length) {
       onValue(ref, handler);
     }
 
     subscribers.push(callback);
-    if(value) {
+    if (value) {
       callback(value);
     }
 
@@ -118,13 +122,13 @@ let res = function(url, options = {}) {
   };
 
   let unsubscribe = callback => {
-    if(callback){
+    if (callback) {
       subscribers = subscribers.filter(cb => cb != callback);
     }
     else {
       subscribers = [];
     }
-    if(!subscribers.length) {
+    if (!subscribers.length) {
       offValue(ref, 'value');
     }
   };
@@ -134,9 +138,9 @@ let res = function(url, options = {}) {
   };
 
   let set = async val => {
-    if(!isLoaded) {
+    if (!isLoaded) {
       let existingValue = await getValue(ref);
-      if(existingValue.exists()) {
+      if (existingValue.exists()) {
         console.warn(`WARNING: You're trying to set a value (${options.url}) before it has been loaded. If you're intentially doing this, use 'overwrite' instead.`);
         return;
       }
@@ -145,7 +149,7 @@ let res = function(url, options = {}) {
   };
 
   let update = val => {
-    if(typeof val == 'string') {
+    if (typeof val == 'string') {
       return set(val);
     }
     else {
@@ -168,7 +172,7 @@ let res = function(url, options = {}) {
   };
 
   let then = async callback => {
-    if(value) {
+    if (value) {
       callback(value);
       return;
     }
@@ -181,13 +185,13 @@ let res = function(url, options = {}) {
   };
 
   return {
-    subscribe, 
+    subscribe,
     get,
-    set, 
-    update, 
-    overwrite, 
-    remove, 
-    push, 
+    set,
+    update,
+    overwrite,
+    remove,
+    push,
     add: push,
     then
   };
