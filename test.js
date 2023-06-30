@@ -381,6 +381,16 @@ describe('Firestore Collection Writes', function() {
 
 describe('Firebase Database', function() {
 
+  it('returns startWith value on undefined', async function() {
+
+    let data = await database("undefined", {
+      startWith: "Come on baby light my fire"
+    });
+
+    assert.equal(data, "Come on baby light my fire");
+
+  });
+
   it('can read a value', async function() {
     
     const value = "I'm a firestarter, twisted firestarter";

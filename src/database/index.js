@@ -25,20 +25,22 @@ const defaultOptions = {
   startWith: null,
 };
 
-export const noop = {
+export const noop = (startWith=null) => ({
   subscribe: callback => {
-    callback(options.startWith);
+    callback(startWith);
     return () => null;
   },
   unsubscribe: () => null,
-  then: callback => callback(options.startWith),
+  then: callback => {
+    callback(startWith)
+  },
   get: () => null,
   set: () => null,
   update: () => null,
   remove: () => null,
   push: () => null,
   add: () => null,
-};
+});
 
 let res = function (url, options = {}) {
 
@@ -55,7 +57,7 @@ let res = function (url, options = {}) {
     options.url.includes('null') || 
     options.url.includes('//')
   ) {
-    return noop;
+    return noop(options.startWith);
   }
 
   const database = getDatabase();
