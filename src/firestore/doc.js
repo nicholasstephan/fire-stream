@@ -97,7 +97,7 @@ export default function doc(options) {
 
   function remove() {
     if(window?.firestreamLog) {
-      console.log("REMOVE", url, val);
+      console.log("REMOVE", url);
     }
     return deleteDoc(ref);
   }
