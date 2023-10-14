@@ -168,7 +168,7 @@ let res = function (url, options = {}) {
   let overwrite = val => {
     value = val;
     if(window?.firestreamLog) {
-      console.log("OVERWRITE", options.url, val);
+      console.log("SET", options.url, val);
     }
     return setValue(ref, value);
   };
@@ -182,7 +182,7 @@ let res = function (url, options = {}) {
 
   let push = val => {
     if(window?.firestreamLog) {
-      console.log("SET", options.url, val);
+      console.log("PUSH", options.url, val);
     }
     let res = pushValue(ref, val);
     return res.key;
