@@ -147,6 +147,9 @@ let res = function (url, options = {}) {
         return;
       }
     }
+    if(window?.firestreamLog) {
+      console.log(`SET ${options.url}`, val);
+    }
     return setValue(ref, val);
   };
 
@@ -155,20 +158,32 @@ let res = function (url, options = {}) {
       return set(val);
     }
     else {
+      if(window?.firestreamLog) {
+        console.log("UPDATE", options.url, val);
+      }
       updateValue(ref, val);
     }
   };
 
   let overwrite = val => {
     value = val;
+    if(window?.firestreamLog) {
+      console.log("OVERWRITE", options.url, val);
+    }
     return setValue(ref, value);
   };
 
   let remove = () => {
+    if(window?.firestreamLog) {
+      console.log("REMOVE". options.url);
+    }
     removeValue(ref);
   };
 
   let push = val => {
+    if(window?.firestreamLog) {
+      console.log("SET", options.url, val);
+    }
     let res = pushValue(ref, val);
     return res.key;
   };

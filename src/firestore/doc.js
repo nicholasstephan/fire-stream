@@ -73,20 +73,32 @@ export default function doc(options) {
       }
     }
     let {id, ...data} = val;
+    if(window?.firestreamLog) {
+      console.log("UPDATE", url, val);
+    }
     return updateDoc(ref, data);
   }
 
   function update(val) {
     let {id, ...data} = val;
+    if(window?.firestreamLog) {
+      console.log("UPDATE", url, val);
+    }
     return updateDoc(ref, data);
   }
 
   function overwrite(val) {
     let {id, ...data} = val;
+    if(window?.firestreamLog) {
+      console.log("SET", url, val);
+    }
     return setDoc(ref, data);
   }
 
   function remove() {
+    if(window?.firestreamLog) {
+      console.log("REMOVE", url, val);
+    }
     return deleteDoc(ref);
   }
 

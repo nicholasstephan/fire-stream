@@ -80,6 +80,9 @@ export default function collection(options={}) {
   }
 
   function add(data={}) {
+    if(window?.firestreamLog) {
+      console.log('ADD', url, val);
+    }
     return addDoc(col, data);
   }
 
