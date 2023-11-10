@@ -14,7 +14,7 @@ const wait = async (timeout, ...result) => {
 };
 
 initializeApp({
-  projectId: process.env.GCLOUD_PROJECT,
+  projectId: "test",
   databaseURL: process.env.FIREBASE_DATABASE_EMULATOR_HOST,
 });
 
@@ -357,6 +357,63 @@ describe('Firestore Collection Reads', function() {
 
     assert.equal(last.length, 1);
     assert.equal(last[0].line, line1.line);
+    
+  });
+
+  it('with updated query', function(done) {
+
+    const line1 = {
+      number: 1,
+      line: "She's just a girl and she's on fire"
+    };
+
+    const line2 = {
+      number: 2,
+      line: "Hotter than a fantasy, lonely like a highway"
+    };
+
+    const line3 = {
+      number: 3,
+      line: "She's living in a world and it's on fire"
+    };
+
+    const line4 = {
+      number: 4,
+      line: "Filled with catastrophe, but she knows she can fly away"
+    };
+
+    Promise.all([
+      addDoc(collection(getFirestore(), "keys"), line1),
+      addDoc(collection(getFirestore(), "keys"), line2),
+      addDoc(collection(getFirestore(), "keys"), line3),
+      addDoc(collection(getFirestore(), "keys"), line4)
+    ]).then(() => {
+    
+      let ref = firestore({
+        url: "keys",
+        orderBy: "number",
+        limit: 1
+      });
+      
+      let calls = 0;
+
+      ref.subscribe(res => {
+        calls += 1;
+
+        console.log('call', calls, res);
+
+        if(calls == 1) {
+          assert.equal(res.length, 1);
+          ref.query({limit:2});
+        }
+
+        if(calls == 2) {
+          assert.equal(res.length, 2);
+          done();
+        }
+      });
+
+    });
     
   });
 
