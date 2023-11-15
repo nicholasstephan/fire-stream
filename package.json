@@ -22,8 +22,8 @@
   },
   "homepage": "https://github.com/nicholasstephan/fire-stream#readme",
   "peerDependencies": {
-    "firebase": "^9.16.0",
-    "lodash": "^4.17.21"
+    "firebase": "",
+    "lodash": ""
   },
   "devDependencies": {
     "firebase-tools": "^11.21.0",
