@@ -20,6 +20,10 @@ export default function collection(options = {}) {
   let isLoaded = false;
   let offSnapshot = null;
 
+  function emit() {
+    subscribers.forEach(callback => callback(value));
+  }
+
   function query(q) {
 
     q = {...options, ...q};
@@ -54,10 +58,6 @@ export default function collection(options = {}) {
         emit();
       });
     }
-  }
-
-  function emit() {
-    subscribers.forEach(callback => callback(value));
   }
 
   async function then(callback) {
