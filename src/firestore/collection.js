@@ -25,39 +25,41 @@ export default function collection(options = {}) {
   }
 
   function query(q) {
+    return new Promise(resolve => {
+      q = {...options, ...q};
 
-    q = {...options, ...q};
-
-    let args = [col];
-    for (let filter of q.where) {
-      if (filter.includes(undefined)) {
-        continue;
+      let args = [col];
+      for (let filter of q.where) {
+        if (filter.includes(undefined)) {
+          continue;
+        }
+        args.push(
+          where(...filter)
+        );
       }
-      args.push(
-        where(...filter)
-      );
-    }
-    if (q.orderBy) {
-      args.push(
-        orderBy(q.orderBy, q.direction)
-      )
-    }
-    if (q.limit) {
-      args.push(
-        limit(q.limit)
-      );
-    }
+      if (q.orderBy) {
+        args.push(
+          orderBy(q.orderBy, q.direction)
+        )
+      }
+      if (q.limit) {
+        args.push(
+          limit(q.limit)
+        );
+      }
 
-    ref = queryRef(...args);
+      ref = queryRef(...args);
 
-    if (subscribers.length) {
-      offSnapshot();
-      offSnapshot = onSnapshot(ref, snap => {
-        value = snap.docs?.map(doc => ({ ...doc.data(), id: doc.id })) || [];
-        isLoaded = true;
-        emit();
-      });
-    }
+      if (subscribers.length) {
+        offSnapshot();
+        offSnapshot = onSnapshot(ref, snap => {
+          value = snap.docs?.map(doc => ({ ...doc.data(), id: doc.id })) || [];
+          isLoaded = true;
+          resolve(value);
+          emit();
+        });
+      }
+    });
   }
 
   async function then(callback) {

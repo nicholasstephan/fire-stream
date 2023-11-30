@@ -400,11 +400,11 @@ describe('Firestore Collection Reads', function() {
       ref.subscribe(res => {
         calls += 1;
 
-        console.log('call', calls, res);
-
         if(calls == 1) {
           assert.equal(res.length, 1);
-          ref.query({limit:2});
+          ref.query({limit:2}).then(value => {
+            assert.equal(value.length, 2);
+          });
         }
 
         if(calls == 2) {
