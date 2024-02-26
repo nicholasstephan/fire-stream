@@ -8,18 +8,47 @@ import {
   onSnapshot,
 } from "firebase/firestore";
 
-export default function doc(options) {
+export default function doc(options = {}) {
 
-  const url = options.url;
-  const ref = docRef(getFirestore(), url);
-
+  let url = "";
+  let ref = null
   let subscribers = [];
-  let value = options.startWith ? { ...options.startWith } : undefined;
+  let value = undefined;
   let isLoaded = false;
   let offSnapshot = null;
+  let filter = options.filter || (v => v);
 
   function emit() {
-    subscribers.forEach(callback => callback(value));
+    subscribers.forEach(callback => callback(filter(value)));
+  }
+
+  function query(q = {}) {
+    return new Promise(resolve => {
+      options = { ...options, ...q };
+      url = options.url;
+      if(!value && options.startWith) {
+        value = options.startWith ? { ...options.startWith } : undefined;
+      }
+      ref = docRef(getFirestore(), url);
+
+      if (subscribers.length) {
+        offSnapshot();
+        offSnapshot = onSnapshot(ref, snap => {
+          if (snap?.exists()) {
+            let base = options.startWith || {};
+            value = { ...base, ...snap.data(), id: snap.id };
+          }
+          else {
+            value = options.startWith ? { ...options.startWith, id: snap.id } : null;
+          }
+
+          isLoaded = true;
+          resolve(value);
+          emit();
+        });
+      }
+
+    });
   }
 
   async function then(callback) {
@@ -52,7 +81,7 @@ export default function doc(options) {
     }
 
     subscribers.push(callback);
-    if (value) callback(value);
+    if (value) callback(filter(value));
 
     return () => unsubscribe(callback);
   }
@@ -90,6 +119,8 @@ export default function doc(options) {
     return deleteDoc(ref);
   }
 
+  query();
+
   return {
     then,
     subscribe,
@@ -98,6 +129,7 @@ export default function doc(options) {
     update,
     overwrite,
     remove,
+    query,
   };
 
 }

@@ -1,3 +1,5 @@
+import documentStore from './doc.js';
+
 import {
   getFirestore,
   collection as colRef,
@@ -16,7 +18,7 @@ export default function collection(options = {}) {
   let col = colRef(getFirestore(), url);
   let ref = null;
   let subscribers = [];
-  let value = options.startWith ? [...options.startWith] : undefined;
+  let value = undefined;
   let isLoaded = false;
   let offSnapshot = null;
 
@@ -26,10 +28,16 @@ export default function collection(options = {}) {
 
   function query(q) {
     return new Promise(resolve => {
-      q = {...options, ...q};
+      options = {...options, ...q};
+
+      url = options.url;
+
+      if(!value && options.startWith) {
+        value = options.startWith ? [...options.startWith] : undefined;
+      }
 
       let args = [col];
-      for (let filter of q.where) {
+      for (let filter of options.where) {
         if (filter.includes(undefined)) {
           continue;
         }
@@ -37,14 +45,14 @@ export default function collection(options = {}) {
           where(...filter)
         );
       }
-      if (q.orderBy) {
+      if (options.orderBy) {
         args.push(
-          orderBy(q.orderBy, q.direction)
+          orderBy(options.orderBy, options.direction)
         )
       }
-      if (q.limit) {
+      if (options.limit) {
         args.push(
-          limit(q.limit)
+          limit(options.limit)
         );
       }
 
@@ -91,7 +99,12 @@ export default function collection(options = {}) {
   }
 
   function unsubscribe(callback) {
-    subscribers = subscribers.filter(c => c !== callback);
+    if(callback) {
+      subscribers = subscribers.filter(c => c !== callback);
+    }
+    else {
+      subscribers = [];
+    }
     if (!subscribers.length) {
       offSnapshot();
     }
@@ -99,6 +112,22 @@ export default function collection(options = {}) {
 
   function add(data = {}) {
     return addDoc(col, data);
+  }
+
+  function doc(index = 0) {
+    let ref = documentStore();
+
+    // this is going to leave hanging subscribers, 
+    // need to unsubscribe when ref is unsubscribed
+    subscribe(docs => {
+      let id = docs?.[index]?.id;
+      if(!id) {
+        return;
+      }
+      ref.query({ url: `${url}/${id}` });
+    });
+
+    return ref;
   }
 
   // Kick of the query.
@@ -112,6 +141,7 @@ export default function collection(options = {}) {
     add,
     push: add,
     query,
+    doc,
   };
 
 }

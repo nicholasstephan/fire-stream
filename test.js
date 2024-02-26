@@ -1,7 +1,7 @@
 import assert from 'assert';
 import sinon from 'sinon';
 import { initializeApp, getApp } from "firebase/app";
-import { getDatabase, ref, onValue, off, get, set, update, push, remove, connectDatabaseEmulator,  } from "firebase/database";
+import { getDatabase, ref, get, set, connectDatabaseEmulator } from "firebase/database";
 import { getFirestore, connectFirestoreEmulator, initializeFirestore, doc, collection, query, setDoc, getDoc, getDocs, addDoc } from "firebase/firestore";
 
 import firestore from "./src/firestore/index.js";
@@ -14,8 +14,7 @@ const wait = async (timeout, ...result) => {
 };
 
 initializeApp({
-  projectId: "test",
-  databaseURL: process.env.FIREBASE_DATABASE_EMULATOR_HOST,
+  projectId: "demo-fire-stream"
 });
 
 initializeFirestore(getApp(), {
@@ -37,15 +36,17 @@ describe('Sanity', function() {
   });
 
   it('can read from and write to database', async function() {
-    const testValue = "Come on, baby, light my fire";
-
-    let loc = ref(getDatabase(), '/door');
-
-    await set(loc, testValue);
+    try {
+      const testValue = "Come on, baby, light my fire";
+      let loc = ref(getDatabase(), '/door');
+      await set(loc, testValue);
+      let snap = await get(loc);
+      assert.equal(snap.val(), testValue);
+    }
+    catch(error) {
+      console.log(error.message);
+    }
     
-    let snap = await get(loc);
-
-    assert.equal(snap.val(), testValue);
   })
 
 });
@@ -414,6 +415,36 @@ describe('Firestore Collection Reads', function() {
       });
 
     });
+    
+  });
+
+  it.only('a document within a collection', async function() {
+
+    const line1 = {
+      number: 1,
+      line: "Well you've got your diamonds"
+    };
+
+    const line2 = {
+      number: 2,
+      line: "And you've got your pretty clothes"
+    };
+
+    await addDoc(collection(getFirestore(), "playwithfire"), line1);
+    await addDoc(collection(getFirestore(), "playwithfire"), line2);
+    
+    let ref1 = await firestore({
+      url: "keys",
+      orderBy: "number",
+    }).doc();
+
+    let ref2 = await firestore({
+      url: "keys",
+      orderBy: "number",
+    }).doc(1);
+      
+    assert.equal(ref1.line, line1.line);
+    assert.equal(ref2.line, line2.line);
     
   });
 

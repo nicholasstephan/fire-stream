@@ -25,7 +25,7 @@ let defaultOptions = {
 };
 
 export default function firestore(url, options = {}) {
-  
+
   if(typeof url == 'string') {
     options.url = url;
   }
@@ -33,7 +33,7 @@ export default function firestore(url, options = {}) {
     options = url;
   }
 
-  if (options.url.includes('undefined') || options.url.includes('null')) {
+  if (!options.url || options.url.includes('undefined') || options.url.includes('null')) {
     return {
       then: callback => callback(options.startWith || null),
       subscribe: callback => {
