@@ -14,15 +14,16 @@ const wait = async (timeout, ...result) => {
 };
 
 initializeApp({
-  projectId: "demo-fire-stream"
+  projectId: "demo-fire-stream",
+  databaseURL: "https://demo-fire-stream-default-rtdb.firebaseio.com",
 });
 
 initializeFirestore(getApp(), {
   ignoreUndefinedProperties: true,
 });
 
-await connectFirestoreEmulator(getFirestore(), 'localhost', 8080);
-await connectDatabaseEmulator(getDatabase(), "localhost", 9000);
+await connectFirestoreEmulator(getFirestore(), '127.0.0.1', 8080);
+await connectDatabaseEmulator(getDatabase(), "127.0.0.1", 9000);
 
 
 describe('Sanity', function() {
@@ -418,7 +419,7 @@ describe('Firestore Collection Reads', function() {
     
   });
 
-  it.only('a document within a collection', async function() {
+  it('a document within a collection', async function() {
 
     const line1 = {
       number: 1,
@@ -429,23 +430,26 @@ describe('Firestore Collection Reads', function() {
       number: 2,
       line: "And you've got your pretty clothes"
     };
-
+    
     await addDoc(collection(getFirestore(), "playwithfire"), line1);
     await addDoc(collection(getFirestore(), "playwithfire"), line2);
     
-    let ref1 = await firestore({
+    let ref = firestore({
       url: "keys",
       orderBy: "number",
-    }).doc();
+    });
 
-    let ref2 = await firestore({
-      url: "keys",
-      orderBy: "number",
-    }).doc(1);
+    console.log('waiting docs');
       
-    assert.equal(ref1.line, line1.line);
-    assert.equal(ref2.line, line2.line);
+    let doc1 = await ref.doc();
+    let doc2 = await ref.doc(1);
+
+    console.log('got docs', doc1, doc2)
+
+    assert.equal(doc1.line, line1.line);
+    assert.equal(doc2.line, line2.line);
     
+    return true;
   });
 
 });
@@ -488,6 +492,22 @@ describe('Firebase Database', function() {
     let data = await database("prodegy");
 
     assert.equal(data, value);
+  
+  });
+
+  it('can read a value as an array', async function() {
+    
+    const value1 = "I'm a firestarter, twisted firestarter";
+    const value2 = "Come on baby light my fire";
+
+    await set(ref(getDatabase(), "array/0"), value1);
+    await set(ref(getDatabase(), "array/1"), value2);
+
+    let data = await database("array", {array:true});
+    
+    assert.equal(data.length, 2);
+    assert.equal(data[0], value1);
+    assert.equal(data[1], value2);
   
   });
 

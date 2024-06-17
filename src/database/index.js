@@ -25,7 +25,7 @@ const defaultOptions = {
   startWith: null,
 };
 
-export const noop = (startWith=null) => ({
+export const noop = (startWith = null) => ({
   subscribe: callback => {
     callback(startWith);
     return () => null;
@@ -53,8 +53,8 @@ let res = function (url, options = {}) {
   options = { ...defaultOptions, ...options };
 
   if (
-    options.url.includes('undefined') || 
-    options.url.includes('null') || 
+    options.url.includes('undefined') ||
+    options.url.includes('null') ||
     options.url.includes('//')
   ) {
     return noop(options.startWith);
@@ -104,6 +104,9 @@ let res = function (url, options = {}) {
       }
       if (typeof value == 'object' && typeof options.startWith == 'object') {
         value = { ...options.startWith, ...value };
+      }
+      if (options.array) {
+        value = Object.entries(value).sort((a, b) => a[0] < b[0] ? -1 : 1).map(([key, val]) => val);
       }
       isLoaded = true;
       subscribers.forEach(callback => callback(value));
