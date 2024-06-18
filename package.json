@@ -10,8 +10,8 @@
     "./storage": "./src/storage/index.js"
   },
   "scripts": {
-    "test": "firebase emulators:exec 'mocha' --project wikiwyg-9e382 --only database,firestore,storage",
-    "firebase": "firebase emulators:start --project wikiwyg-9e382 --only database,firestore,storage,ui",
+    "test": "firebase emulators:exec 'mocha' --project fire-stream-e747b --only database,firestore,storage",
+    "firebase": "firebase emulators:start --project fire-stream-e747b --only database,firestore,storage,ui",
     "mocha": "mocha"
   },
   "repository": {

@@ -19,9 +19,9 @@ import database from "./src/database/index.js";
 import storage, { base64ToFile } from "./src/storage/index.js";
 
 initializeApp({
-  projectId: "wikiwyg-9e382",
-  databaseURL: "https://wikiwyg-9e382-default-rtdb.firebaseio.com",
-  storageBucket: "wikiwyg-9e382.appspot.com",
+  projectId: "fire-stream-e747b",
+  databaseURL: "https://fire-stream-e747b-default-rtdb.firebaseio.com",
+  storageBucket: "fire-stream-e747b.appspot.com",
 });
 
 initializeFirestore(getApp(), {
