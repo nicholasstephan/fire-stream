@@ -7,6 +7,7 @@ import { getStorage, connectStorageEmulator, uploadBytesResumable, uploadBytes, 
 import { JSDOM } from "jsdom";
 import fs from 'fs/promises';
 import path from 'path';
+import fetch from 'node-fetch';
 
 const { window } = new JSDOM('');
 global.Blob = window.Blob;
@@ -557,7 +558,6 @@ describe('Firebase Database Reads', function() {
 describe('Firebase Storage Reads', function() {
   it('sanity', async function() {
     const data = new Uint8Array([0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x2c, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64, 0x21]);
-    console.log('blob', data);
 
     const id = `file${Date.now()}`;
     const location = `uploads/${id}/test.txt`;
@@ -567,36 +567,15 @@ describe('Firebase Storage Reads', function() {
       location: location,
     });
 
-    console.log('location', location);
-
-    console.log('storage', getStorage());
-
     let snap = await uploadBytes(storageRef(getStorage(), location), data.buffer);
-    console.log('res', snap);
     assert.ok(snap);
 
     let url = await getDownloadURL(storageRef(getStorage(), location));
     assert.ok(url);
-    console.log('url', url);
-
-    await new Promise((resolve, reject) => {
-      const xhr = new XMLHttpRequest();
-      xhr.responseType = 'blob';
-      xhr.onload = async (event) => {
-        const blob = xhr.response;
-        console.log('response', blob);
-        const reader = new FileReader();
-        reader.onload = () => {
-          const downloadedData = new Uint8Array(reader.result);
-          assert.deepEqual(data, downloadedData);
-          resolve();
-        };
-        reader.onerror = reject;
-        reader.readAsArrayBuffer(blob);
-      };
-      xhr.onerror = reject;
-      xhr.open('GET', url);
-      xhr.send();
-    });
+    
+    let result = await fetch(url).then(res => res.text());
+    
+    assert.strictEqual(new TextDecoder().decode(data), result);
+    
   });
 });
