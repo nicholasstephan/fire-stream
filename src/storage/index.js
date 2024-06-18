@@ -3,6 +3,7 @@ import {
   ref,
   deleteObject,
   uploadBytesResumable,
+  getDownloadURL,
 } from "firebase/storage";
 
 import {
@@ -15,50 +16,58 @@ import {
   updateDoc,
   serverTimestamp,
   deleteField,
+  increment,
 } from "firebase/firestore";
 
-import { getAuth } from "firebase/auth";
 
-
-export default function (folder) {
+export default function (folder = "uploads") {
   return {
-    upload: (e, callback) => upload(folder, e, callback),
+    upload: e => upload(folder, e),
     remove: id => remove(id),
+    url: id => url(folder, id),
   };
 };
 
-export async function upload(folder, files, callback) {
-  if (!files) return;
+export function url(folder, id) {
+  let location = `${folder}/${id}`;
+  return getDownloadURL(ref(getStorage(), location));
+}
+
+export async function upload(folder, files) {
+  if (!files) {
+    console.warn("A file upload requires a file.");
+    return;
+  }
+  if (!folder) {
+    console.warn("A file upload requires a folder.");
+    return;
+  }
   if (files?.target?.files) files = files.target.files; // if files is an upload event
   if (files?.target?.result) files = [base64ToFile(files.target.result, files.name)]; // if files is a FileReader load event
+  if (files?.buffer) files = files.buffer; // for Unit8Arrays
   if (!files?.length) files = [files]; // make sure it's a list
 
-  if (!folder) {
-    folder = "uploads";
-  }
+  let ext = "";
 
   let uploads = [];
   let res = [];
 
   let filesCol = collection(getFirestore(), `files`);
 
-  let userId = getAuth().currentUser?.uid || null;
-
   for (let file of files) {
 
     let fileDoc = await addDoc(filesCol, {
       dateCreated: serverTimestamp(),
       folder: folder,
-      name: file.name || "Untitled",
+      name: file.name || null,
       type: file.type,
       size: file.size,
       uploadProgress: 0,
-      createdByUserId: userId,
     });
 
     let id = fileDoc.id;
 
-    let location = `${folder}/${id}/${file.name}`
+    let location = `${folder}/${id}`
     let storageRef = ref(getStorage(), location);
 
     uploads.push(new Promise((resolve, reject) => {
@@ -76,6 +85,7 @@ export async function upload(folder, files, callback) {
               location: location,
               uploadProgress: deleteField(),
               uploadError: deleteField(),
+              useCount: 0,
             });
             resolve();
           }
@@ -83,13 +93,14 @@ export async function upload(folder, files, callback) {
 
       res.push(id);
     }));
+
   }
+
+  await Promise.all(uploads);
 
   if (res.length == 1) {
     res = res[0];
   }
-
-  Promise.all(uploads).then(() => callback && callback(res));
 
   return res;
 }
@@ -101,6 +112,11 @@ export async function remove(id) {
     return;
   }
   let file = fileDoc.data();
+
+  if(file.useCount > 1) {
+    await updateDoc(fileRef, { useCount: increment(-1) });
+    return;
+  }
 
   // remove original.
   let storageRef = ref(getStorage(), file.location);
@@ -116,7 +132,8 @@ export async function remove(id) {
     await deleteObject(storageRef);
   }
 
-  await deleteDoc(fileRef);
+  // await deleteDoc(fileRef);
+  await updateDoc(fileRef, { dateRemoved: serverTimestamp() });
 }
 
 export function base64ToFile(str, filename = "Untitled") {

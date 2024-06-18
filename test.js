@@ -3,7 +3,8 @@ import sinon from 'sinon';
 import { initializeApp, getApp } from "firebase/app";
 import { getDatabase, ref, get, set, connectDatabaseEmulator } from "firebase/database";
 import { getFirestore, connectFirestoreEmulator, initializeFirestore, doc, collection, query, setDoc, getDoc, getDocs, addDoc } from "firebase/firestore";
-import { getStorage, connectStorageEmulator, uploadBytesResumable, uploadBytes, ref as storageRef, getDownloadURL } from "firebase/storage";
+import { getStorage, connectStorageEmulator, uploadBytes, ref as storageRef, getDownloadURL } from "firebase/storage";
+// import { getAuth, connectAuthEmulator } from "firebase/auth";
 import { JSDOM } from "jsdom";
 import fs from 'fs/promises';
 import path from 'path';
@@ -20,6 +21,7 @@ import storage, { base64ToFile } from "./src/storage/index.js";
 
 initializeApp({
   projectId: "fire-stream-e747b",
+  // authDomain: "fire-stream-e747b.firebaseapp.com",
   databaseURL: "https://fire-stream-e747b-default-rtdb.firebaseio.com",
   storageBucket: "fire-stream-e747b.appspot.com",
 });
@@ -31,6 +33,7 @@ initializeFirestore(getApp(), {
 await connectFirestoreEmulator(getFirestore(), '127.0.0.1', 8080);
 await connectDatabaseEmulator(getDatabase(), "127.0.0.1", 9000);
 await connectStorageEmulator(getStorage(), '127.0.0.1', 9199);
+// await connectAuthEmulator(getAuth(), `http://127.0.0.1:9099`);
 
 async function loadImageAsBase64(filePath) {
   const absolutePath = path.resolve(filePath);
@@ -60,6 +63,28 @@ describe('Sanity', function() {
     catch(error) {
       console.log(error.message);
     }
+  });
+
+  it('can read and write from storage', async function() {
+    const data = new Uint8Array([0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x2c, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64, 0x21]);
+    const id = `file${Date.now()}`;
+    const location = `uploads/${id}/test.txt`;
+
+    await setDoc(doc(getFirestore(), "files", id), {
+      name: "test.txt",
+      location: location,
+    });
+
+    let snap = await uploadBytes(storageRef(getStorage(), location), data.buffer);
+    assert.ok(snap);
+
+    let url = await getDownloadURL(storageRef(getStorage(), location));
+    assert.ok(url);
+    
+    let result = await fetch(url).then(res => res.text());
+    
+    assert.strictEqual(new TextDecoder().decode(data), result);
+    
   });
 
 });
@@ -556,11 +581,12 @@ describe('Firebase Database Reads', function() {
 });
 
 describe('Firebase Storage Reads', function() {
-  it('sanity', async function() {
+
+  it('can read from storage', async function() {
     const data = new Uint8Array([0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x2c, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64, 0x21]);
 
     const id = `file${Date.now()}`;
-    const location = `uploads/${id}/test.txt`;
+    const location = `uploads/${id}`;
 
     await setDoc(doc(getFirestore(), "files", id), {
       name: "test.txt",
@@ -570,7 +596,8 @@ describe('Firebase Storage Reads', function() {
     let snap = await uploadBytes(storageRef(getStorage(), location), data.buffer);
     assert.ok(snap);
 
-    let url = await getDownloadURL(storageRef(getStorage(), location));
+    let url = await storage().url(id);
+    
     assert.ok(url);
     
     let result = await fetch(url).then(res => res.text());
@@ -578,4 +605,103 @@ describe('Firebase Storage Reads', function() {
     assert.strictEqual(new TextDecoder().decode(data), result);
     
   });
+
+  it('can write to storage', async function() {
+    const data = new Uint8Array([0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x2c, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64, 0x21]);
+
+    let id = await storage().upload(data);
+
+    assert.ok(id);
+
+    // Emulator seems to need a bit of a time to figure itself out.
+    // await new Promise(r => setTimeout(r, 100));
+
+    let url = await getDownloadURL(storageRef(getStorage(), `/uploads/${id}`));
+    assert.ok(url);
+    
+    let result = await fetch(url).then(res => res.text());
+    
+    assert.strictEqual(new TextDecoder().decode(data), result);
+  });
+
+  it('can creates associated file in firestore', async function() {
+    const data = new Uint8Array([0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x2c, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64, 0x21]);
+
+    let id = await storage().upload(data);
+
+    assert.ok(id);
+
+    let snap = await getDoc(doc(getFirestore(), "files", id));
+    let snapData = snap.data();
+
+    assert.equal(snapData.location, `uploads/${id}`);
+    assert.equal(snapData.folder, 'uploads');
+    assert.equal(snapData.useCount, 0);
+  });
+
+  it('can remove from storage', async function() {
+
+    const data = new Uint8Array([0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x2c, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64, 0x21]);
+
+    const id = `file${Date.now()}`;
+    const location = `uploads/${id}`;
+
+    await setDoc(doc(getFirestore(), "files", id), {
+      name: "test.txt",
+      location: location,
+      useCount: 1,
+    });
+
+    let uploadSnap = await uploadBytes(storageRef(getStorage(), location), data.buffer);
+    assert.ok(uploadSnap);
+
+    await storage().remove(id);
+    
+    let docSnap = await getDoc(doc(getFirestore(), "files", id));
+    let docData = docSnap.data();
+    assert.ok(docData.dateRemoved);
+
+    try {
+      let url = await getDownloadURL(storageRef(getStorage(), location));
+    }
+    catch(error) {
+      assert.equal(error.code, 'storage/object-not-found');
+    }
+    
+  });
+
+  it('will decrement use count.', async function() {
+
+    const data = new Uint8Array([0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x2c, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64, 0x21]);
+
+    const id = `file${Date.now()}`;
+    const location = `uploads/${id}`;
+
+    await setDoc(doc(getFirestore(), "files", id), {
+      name: "test.txt",
+      location: location,
+      useCount: 3,
+    });
+
+    let uploadSnap = await uploadBytes(storageRef(getStorage(), location), data.buffer);
+    assert.ok(uploadSnap);
+
+    await storage().remove(id);
+    
+    let docSnap = await getDoc(doc(getFirestore(), "files", id));
+    let docData = docSnap.data();
+    assert.equal(docData.dateRemoved, undefined);
+    assert.equal(docData.useCount, 2);
+
+    let url = await getDownloadURL(storageRef(getStorage(), location));
+    assert.ok(url);
+    
+  });
+
+});
+
+describe('Database file storage.', function() {
+
+
+
 });

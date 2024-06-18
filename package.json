@@ -10,9 +10,10 @@
     "./storage": "./src/storage/index.js"
   },
   "scripts": {
-    "test": "firebase emulators:exec 'mocha' --project fire-stream-e747b --only database,firestore,storage",
-    "firebase": "firebase emulators:start --project fire-stream-e747b --only database,firestore,storage,ui",
-    "mocha": "mocha"
+    "test": "firebase emulators:exec 'mocha' --only database,firestore,storage",
+    "firebase": "firebase emulators:start",
+    "mocha": "mocha",
+    "kill": "lsof -t -i:4000 -i:5000 -i:8080 -i:8085  -i:9000 -i:9099 -i:9199 -i:9090 -i:5001 | xargs kill -9"
   },
   "repository": {
     "type": "git",

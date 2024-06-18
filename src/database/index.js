@@ -15,6 +15,10 @@ import {
   remove as removeValue,
 } from "firebase/database";
 
+const isObject = v => v instanceof Object;
+const isFile = v => v instanceof Uint8Array || v instanceof Blob || v instanceof File;
+
+
 
 const defaultOptions = {
   // An initial value to return before the data is loaded, 
@@ -42,7 +46,7 @@ export const noop = (startWith = null) => ({
   add: () => null,
 });
 
-let res = function (url, options = {}) {
+export default function (url, options = {}) {
 
   if (typeof url == 'string') {
     options.url = url;
@@ -150,6 +154,19 @@ let res = function (url, options = {}) {
         return;
       }
     }
+
+
+    let upload = async v => {
+      return v;
+    }
+
+    if (isFile(val)) {
+      val = await upload(val);
+    }
+    else if (isObject(val)) {
+
+    }
+    
     return setValue(ref, val);
   };
 
@@ -202,5 +219,3 @@ let res = function (url, options = {}) {
   };
 
 }
-
-export default res;
