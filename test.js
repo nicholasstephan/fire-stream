@@ -3,19 +3,24 @@ import sinon from 'sinon';
 import { initializeApp, getApp } from "firebase/app";
 import { getDatabase, ref, get, set, connectDatabaseEmulator } from "firebase/database";
 import { getFirestore, connectFirestoreEmulator, initializeFirestore, doc, collection, query, setDoc, getDoc, getDocs, addDoc } from "firebase/firestore";
+import { getStorage, connectStorageEmulator, uploadBytesResumable, uploadBytes, ref as storageRef, getDownloadURL } from "firebase/storage";
+import { JSDOM } from "jsdom";
+import fs from 'fs/promises';
+import path from 'path';
+
+const { window } = new JSDOM('');
+global.Blob = window.Blob;
+global.File = window.File;
+global.atob = window.atob;
 
 import firestore from "./src/firestore/index.js";
 import database from "./src/database/index.js";
-
-const wait = async (timeout, ...result) => {
-  return new Promise(resolve => {
-    setTimeout(resolve, timeout, ...result);
-  });
-};
+import storage, { base64ToFile } from "./src/storage/index.js";
 
 initializeApp({
-  projectId: "demo-fire-stream",
-  databaseURL: "https://demo-fire-stream-default-rtdb.firebaseio.com",
+  projectId: "wikiwyg-9e382",
+  databaseURL: "https://wikiwyg-9e382-default-rtdb.firebaseio.com",
+  storageBucket: "wikiwyg-9e382.appspot.com",
 });
 
 initializeFirestore(getApp(), {
@@ -24,6 +29,13 @@ initializeFirestore(getApp(), {
 
 await connectFirestoreEmulator(getFirestore(), '127.0.0.1', 8080);
 await connectDatabaseEmulator(getDatabase(), "127.0.0.1", 9000);
+await connectStorageEmulator(getStorage(), '127.0.0.1', 9199);
+
+async function loadImageAsBase64(filePath) {
+  const absolutePath = path.resolve(filePath);
+  const fileBuffer = await fs.readFile(absolutePath);
+  return fileBuffer.toString('base64');
+}
 
 
 describe('Sanity', function() {
@@ -47,8 +59,7 @@ describe('Sanity', function() {
     catch(error) {
       console.log(error.message);
     }
-    
-  })
+  });
 
 });
 
@@ -419,39 +430,6 @@ describe('Firestore Collection Reads', function() {
     
   });
 
-  it('a document within a collection', async function() {
-
-    const line1 = {
-      number: 1,
-      line: "Well you've got your diamonds"
-    };
-
-    const line2 = {
-      number: 2,
-      line: "And you've got your pretty clothes"
-    };
-    
-    await addDoc(collection(getFirestore(), "playwithfire"), line1);
-    await addDoc(collection(getFirestore(), "playwithfire"), line2);
-    
-    let ref = firestore({
-      url: "keys",
-      orderBy: "number",
-    });
-
-    console.log('waiting docs');
-      
-    let doc1 = await ref.doc();
-    let doc2 = await ref.doc(1);
-
-    console.log('got docs', doc1, doc2)
-
-    assert.equal(doc1.line, line1.line);
-    assert.equal(doc2.line, line2.line);
-    
-    return true;
-  });
-
 });
 
 describe('Firestore Collection Writes', function() {
@@ -471,8 +449,24 @@ describe('Firestore Collection Writes', function() {
 
 });
 
-describe('Firebase Database', function() {
+describe('Firebase Database Writes', function() {
 
+  it('can write a value', async function() {
+
+    const value = "Fight fire with fire";
+    
+    await database("metallica").update(value);  
+    
+    let snap = await get(ref(getDatabase(), "metallica"));
+    
+    assert.equal(snap.val(), value);
+
+  });
+
+});
+
+describe('Firebase Database Reads', function() {
+  
   it('returns startWith value on undefined', async function() {
 
     let data = await database("undefined", {
@@ -558,16 +552,51 @@ describe('Firebase Database', function() {
   
   });
 
-  it('can write a value', async function() {
+});
 
-    const value = "Fight fire with fire";
-    
-    await database("metallica").update(value);  
-    
-    let snap = await get(ref(getDatabase(), "metallica"));
-    
-    assert.equal(snap.val(), value);
+describe('Firebase Storage Reads', function() {
+  it('sanity', async function() {
+    const data = new Uint8Array([0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x2c, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64, 0x21]);
+    console.log('blob', data);
 
+    const id = `file${Date.now()}`;
+    const location = `uploads/${id}/test.txt`;
+
+    await setDoc(doc(getFirestore(), "files", id), {
+      name: "test.txt",
+      location: location,
+    });
+
+    console.log('location', location);
+
+    console.log('storage', getStorage());
+
+    let snap = await uploadBytes(storageRef(getStorage(), location), data.buffer);
+    console.log('res', snap);
+    assert.ok(snap);
+
+    let url = await getDownloadURL(storageRef(getStorage(), location));
+    assert.ok(url);
+    console.log('url', url);
+
+    await new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.responseType = 'blob';
+      xhr.onload = async (event) => {
+        const blob = xhr.response;
+        console.log('response', blob);
+        const reader = new FileReader();
+        reader.onload = () => {
+          const downloadedData = new Uint8Array(reader.result);
+          assert.deepEqual(data, downloadedData);
+          resolve();
+        };
+        reader.onerror = reject;
+        reader.readAsArrayBuffer(blob);
+      };
+      xhr.onerror = reject;
+      xhr.open('GET', url);
+      xhr.send();
+    });
   });
-
 });

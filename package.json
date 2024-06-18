@@ -6,10 +6,13 @@
   "main": "index.js",
   "exports": {
     "./database": "./src/database/index.js",
-    "./firestore": "./src/firestore/index.js"
+    "./firestore": "./src/firestore/index.js",
+    "./storage": "./src/storage/index.js"
   },
   "scripts": {
-    "test": "firebase emulators:exec 'mocha' --project demo-fire-stream --only database,firestore"
+    "test": "firebase emulators:exec 'mocha' --project fire-stream --only database,firestore,storage",
+    "firebase": "firebase emulators:start --project fire-stream --only database,firestore,storage,ui",
+    "mocha": "mocha"
   },
   "repository": {
     "type": "git",
@@ -22,12 +25,14 @@
   },
   "homepage": "https://github.com/nicholasstephan/fire-stream#readme",
   "peerDependencies": {
-    "firebase": "",
-    "lodash": ""
+    "firebase": ""
   },
   "devDependencies": {
-    "firebase-tools": "^11.21.0",
+    "firebase-tools": "^13.11.2",
     "mocha": "^10.2.0",
     "sinon": "^15.0.1"
+  },
+  "dependencies": {
+    "jsdom": "^24.1.0"
   }
 }

@@ -1,5 +1,3 @@
-import documentStore from './doc.js';
-
 import {
   getFirestore,
   collection as colRef,
@@ -114,22 +112,6 @@ export default function collection(options = {}) {
     return addDoc(col, data);
   }
 
-  function doc(index = 0) {
-    let ref = documentStore();
-
-    // this is going to leave hanging subscribers, 
-    // need to unsubscribe when ref is unsubscribed
-    subscribe(docs => {
-      let id = docs?.[index]?.id;
-      if(!id) {
-        return;
-      }
-      ref.query({ url: `${url}/${id}` });
-    });
-
-    return ref;
-  }
-
   // Kick of the query.
   query(options);
 
@@ -141,7 +123,6 @@ export default function collection(options = {}) {
     add,
     push: add,
     query,
-    doc,
   };
 
 }

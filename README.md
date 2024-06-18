@@ -1,6 +1,8 @@
 # fire-stream
 
-## Usage
+An opinionated way to use Firebase.
+
+## Install
 
 Use with 
 
@@ -8,7 +10,16 @@ Use with
 npm install https://github.com/nicholasstephan/fire-stream.git
 ```
 
-
-## Testing
+## Test
 
 `npm run test`
+
+## Usage
+
+### Authentication
+
+### Firestore
+
+### Database
+
+### Storage
