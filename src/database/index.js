@@ -15,8 +15,11 @@ import {
   remove as removeValue,
 } from "firebase/database";
 
+import { upload, remove } from '../storage/index.js';
+
 const isObject = v => v instanceof Object;
 const isFile = v => v instanceof Uint8Array || v instanceof Blob || v instanceof File;
+
 
 
 
@@ -155,17 +158,8 @@ export default function (url, options = {}) {
       }
     }
 
-
-    let upload = async v => {
-      return v;
-    }
-
-    if (isFile(val)) {
-      val = await upload(val);
-    }
-    else if (isObject(val)) {
-
-    }
+    val = await uploadFiles(val);
+    await removeFiles(value, val);
     
     return setValue(ref, val);
   };
@@ -179,12 +173,20 @@ export default function (url, options = {}) {
     }
   };
 
-  let overwrite = val => {
-    value = val;
-    return setValue(ref, value);
+  let overwrite = async val => {
+    let snap = await getValue(ref);
+    value = snap.val();
+    isLoaded = true;
+    return set(val);
   };
 
-  let remove = () => {
+  let remove = async () => {
+    if (!isLoaded) {
+      let snap = await getValue(ref);
+      value = snap.val();
+    }
+    await removeFiles(value);
+    value = null;
     removeValue(ref);
   };
 
@@ -218,4 +220,33 @@ export default function (url, options = {}) {
     then
   };
 
+}
+
+async function uploadFiles(value) {
+  if(isFile(value)) {
+    let id = await upload('uploads', value);
+    return {
+      folder: 'uploads',
+      storageId: id,
+    }
+  }
+  if(isObject(value)) {
+    for(let key in value) {
+      value[key] = await uploadFiles(value[key]);
+    }
+  }
+  return value;
+}
+
+async function removeFiles(oldValue, newValue) {
+  if(oldValue?.storageId) {
+    if(newValue?.storageId != oldValue.storageId) {
+      return remove(oldValue.storageId);
+    }
+  }
+  else if(isObject(oldValue)) {
+    for(let key in oldValue) {
+      await removeFiles(oldValue[key], newValue?.[key]);
+    }
+  }
 }

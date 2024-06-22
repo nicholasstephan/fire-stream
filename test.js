@@ -35,10 +35,8 @@ await connectDatabaseEmulator(getDatabase(), "127.0.0.1", 9000);
 await connectStorageEmulator(getStorage(), '127.0.0.1', 9199);
 // await connectAuthEmulator(getAuth(), `http://127.0.0.1:9099`);
 
-async function loadImageAsBase64(filePath) {
-  const absolutePath = path.resolve(filePath);
-  const fileBuffer = await fs.readFile(absolutePath);
-  return fileBuffer.toString('base64');
+async function wait(time) {
+  return new Promise(resolve => setTimeout(resolve, time));
 }
 
 
@@ -89,9 +87,9 @@ describe('Sanity', function() {
 
 });
 
-describe('Firestore Document Reads', function() {
+describe('Firestore', function() {
 
-  it('as a promise', async function() {
+  it('read document as a promise', async function() {
 
     const id = `doc${Date.now()}`;
 
@@ -107,7 +105,7 @@ describe('Firestore Document Reads', function() {
 
   });
 
-  it('as a subscription', async function() {
+  it('read document as a subscription', async function() {
 
     const id = `doc${Date.now()}`;
       
@@ -129,7 +127,7 @@ describe('Firestore Document Reads', function() {
 
   });
 
-  it('in real time', async function() {
+  it('read document in real time', async function() {
     
     const id = `doc${Date.now()}`;
     const callback = sinon.spy();
@@ -153,12 +151,8 @@ describe('Firestore Document Reads', function() {
     assert.deepEqual(callback.getCall(0).args[0], testValue1);
     assert.deepEqual(callback.getCall(1).args[0], testValue2);
   });
-
-});
-
-describe('Firestore Document Writes', function() {
   
-  it('without overwriting existing data', async function() {
+  it('write document without overwriting existing data', async function() {
 
     const id = `doc${Date.now()}`;
 
@@ -270,12 +264,8 @@ describe('Firestore Document Writes', function() {
     assert.equal(snap.data(), undefined);
 
   });
-  
-});
 
-describe('Firestore Collection Reads', function() {
-
-  it('as a promise', async function() {
+  it('read collection as a promise', async function() {
 
     let data = [
       {line: "You know that it would be untrue"},
@@ -300,7 +290,7 @@ describe('Firestore Collection Reads', function() {
 
   });
 
-  it('in real time', async function() {
+  it('read collection in real time', async function() {
 
     const line1 = {line:"Smoke on the water"};
     const line2 = {line:"Fire in the sky"};
@@ -317,7 +307,7 @@ describe('Firestore Collection Reads', function() {
 
   });
 
-  it('filtered', async function() {
+  it('filtered collection', async function() {
     const line1 = {
       number: 1,
       line:"You shake my nerves and you rattle my brain"
@@ -456,10 +446,6 @@ describe('Firestore Collection Reads', function() {
     
   });
 
-});
-
-describe('Firestore Collection Writes', function() {
-
   it('add a document', async function() {
 
     let line = "I'm a firestarter, twisted firestarter";
@@ -475,7 +461,7 @@ describe('Firestore Collection Writes', function() {
 
 });
 
-describe('Firebase Database Writes', function() {
+describe('Database', function() {
 
   it('can write a value', async function() {
 
@@ -488,10 +474,6 @@ describe('Firebase Database Writes', function() {
     assert.equal(snap.val(), value);
 
   });
-
-});
-
-describe('Firebase Database Reads', function() {
   
   it('returns startWith value on undefined', async function() {
 
@@ -580,7 +562,7 @@ describe('Firebase Database Reads', function() {
 
 });
 
-describe('Firebase Storage Reads', function() {
+describe('Storage', function() {
 
   it('can read from storage', async function() {
     const data = new Uint8Array([0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x2c, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64, 0x21]);
@@ -609,34 +591,33 @@ describe('Firebase Storage Reads', function() {
   it('can write to storage', async function() {
     const data = new Uint8Array([0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x2c, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64, 0x21]);
 
-    let id = await storage().upload(data);
+    let id = await storage().upload(data, async () => {
+
+      let url = await getDownloadURL(storageRef(getStorage(), `/uploads/${id}`));
+      assert.ok(url);
+      
+      let result = await fetch(url).then(res => res.text());
+      
+      assert.strictEqual(new TextDecoder().decode(data), result);
+
+    });
 
     assert.ok(id);
-
-    // Emulator seems to need a bit of a time to figure itself out.
-    // await new Promise(r => setTimeout(r, 100));
-
-    let url = await getDownloadURL(storageRef(getStorage(), `/uploads/${id}`));
-    assert.ok(url);
-    
-    let result = await fetch(url).then(res => res.text());
-    
-    assert.strictEqual(new TextDecoder().decode(data), result);
   });
 
   it('can creates associated file in firestore', async function() {
     const data = new Uint8Array([0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x2c, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64, 0x21]);
 
-    let id = await storage().upload(data);
+    let id = storage().upload(data, async () => {
+      let snap = await getDoc(doc(getFirestore(), "files", id));
+      let snapData = snap.data();
+
+      assert.equal(snapData.location, `uploads/${id}`);
+      assert.equal(snapData.folder, 'uploads');
+      assert.equal(snapData.useCount, 0);
+    });
 
     assert.ok(id);
-
-    let snap = await getDoc(doc(getFirestore(), "files", id));
-    let snapData = snap.data();
-
-    assert.equal(snapData.location, `uploads/${id}`);
-    assert.equal(snapData.folder, 'uploads');
-    assert.equal(snapData.useCount, 0);
   });
 
   it('can remove from storage', async function() {
@@ -670,7 +651,7 @@ describe('Firebase Storage Reads', function() {
     
   });
 
-  it('will decrement use count.', async function() {
+  it('will decrement use count', async function() {
 
     const data = new Uint8Array([0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x2c, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64, 0x21]);
 
@@ -698,10 +679,203 @@ describe('Firebase Storage Reads', function() {
     
   });
 
-});
+  it('will store file added to database', async function() {
 
-describe('Database file storage.', function() {
+    let file = new Uint8Array([0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x2c, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64, 0x21]);
 
+    let data = {
+      name: "Doors",
+      file: file,
+    };
 
+    await database("file").set(data);
+
+    let snap = await get(ref(getDatabase(), "file"));
+    let snapData = snap.val();
+
+    assert.equal(snapData.name, data.name);
+    assert.ok(snapData.file.folder);
+    assert.ok(snapData.file.storageId);
+
+    let value = await firestore(`files/${snapData.file.storageId}`);
+
+    assert.ok(value);
+
+  });
+
+  it('will remove stored file on database change', async function() {
+
+    // add a file and associated firestore entry
+    const data = new Uint8Array([0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x2c, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64, 0x21]);
+
+    const id = `file${Date.now()}`;
+    const location = `uploads/${id}`;
+
+    await setDoc(doc(getFirestore(), "files", id), {
+      name: "test.txt",
+      location: location,
+      useCount: 1,
+    });
+
+    let uploadSnap = await uploadBytes(storageRef(getStorage(), location), data.buffer);
+    assert.ok(uploadSnap);
+
+    const value = {
+      name: "Fire Starter",
+      file: {
+        folder: 'uploads',
+        storageId: id,
+      }
+    };
+
+    await set(ref(getDatabase(), "prodegy"), value);
+
+    await database("prodegy").overwrite({
+      name: "Fire Starter"
+      // note that the file property is missing
+    });
+
+    // check the file is removed from storage
+    let docSnap = await getDoc(doc(getFirestore(), "files", id));
+    let docData = docSnap.data();
+
+    assert.ok(docData.dateRemoved);
+
+    try {
+      await getDownloadURL(storageRef(getStorage(), location));
+    }
+    catch(error) {
+      assert.equal(error.code, 'storage/object-not-found');
+    }
+
+  });
+
+  it('will remove stored file on database remove', async function() {
+
+    // add a file and associated firestore entry
+    const data = new Uint8Array([0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x2c, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64, 0x21]);
+
+    const id = `file${Date.now()}`;
+    const location = `uploads/${id}`;
+
+    await setDoc(doc(getFirestore(), "files", id), {
+      name: "test.txt",
+      location: location,
+      useCount: 1,
+    });
+
+    let uploadSnap = await uploadBytes(storageRef(getStorage(), location), data.buffer);
+    assert.ok(uploadSnap);
+
+    const value = {
+      name: "Fire Starter",
+      file: {
+        folder: 'uploads',
+        storageId: id,
+      }
+    };
+
+    await set(ref(getDatabase(), "prodegy"), value);
+
+    await database("prodegy").remove();
+
+    // check the file is removed from storage
+    let docSnap = await getDoc(doc(getFirestore(), "files", id));
+    let docData = docSnap.data();
+
+    assert.ok(docData.dateRemoved);
+
+    try {
+      await getDownloadURL(storageRef(getStorage(), location));
+    }
+    catch(error) {
+      assert.equal(error.code, 'storage/object-not-found');
+    }
+
+  });
+
+  it('will remove stored file on database file replaced', async function() {
+
+    // add a file and associated firestore entry
+    const data = new Uint8Array([0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x2c, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64, 0x21]);
+
+    const id = `file${Date.now()}`;
+    const location = `uploads/${id}`;
+
+    await setDoc(doc(getFirestore(), "files", id), {
+      name: "test.txt",
+      location: location,
+      useCount: 1,
+    });
+
+    let uploadSnap = await uploadBytes(storageRef(getStorage(), location), data.buffer);
+    assert.ok(uploadSnap);
+
+    const value = {
+      name: "Fire Starter",
+      file: {
+        folder: 'uploads',
+        storageId: id,
+      }
+    };
+
+    await set(ref(getDatabase(), "prodegy"), value);
+
+    await database("prodegy").overwrite({
+      name: "Fire Starter",
+      file: data
+    });
+
+    // check the file is removed from storage
+    let docSnap = await getDoc(doc(getFirestore(), "files", id));
+    let docData = docSnap.data();
+
+    assert.ok(docData.dateRemoved);
+
+    try {
+      await getDownloadURL(storageRef(getStorage(), location));
+    }
+    catch(error) {
+      assert.equal(error.code, 'storage/object-not-found');
+    }
+
+    let newData = await database("prodegy");
+
+    assert.notEqual(newData.file.storageId, id);
+
+  });
+
+  it('will increment use count when used in database', async function() {
+    const data = new Uint8Array([0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x2c, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64, 0x21]);
+    
+    await database("metallica").overwrite({
+      name: "Metallica",
+      file: data,
+    });
+
+    let metallica = await database("metallica");
+
+    assert.ok(metallica.file.storageId);
+
+    await database("doors").overwrite({
+      name: "Doors",
+      file: metallica.file,
+    });
+
+    await wait(1000);
+
+    let docSnap = await getDoc(doc(getFirestore(), "files", metallica.file.storageId));
+    let docData = docSnap.data();
+    assert.equal(docData.useCount, 2);
+
+  });
+
+  it('will add file on database update', async function() {
+
+  });
+
+  it('will remove file on database update', async function() {
+
+  });
 
 });

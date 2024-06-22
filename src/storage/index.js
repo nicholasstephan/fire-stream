@@ -29,11 +29,16 @@ export default function (folder = "uploads") {
 };
 
 export function url(folder, id) {
+  if(typeof folder == "object") {
+    id = folder.storageId;
+    folder = folder.folder;
+  }
+
   let location = `${folder}/${id}`;
   return getDownloadURL(ref(getStorage(), location));
 }
 
-export async function upload(folder, files) {
+export async function upload(folder, files, callback) {
   if (!files) {
     console.warn("A file upload requires a file.");
     return;
@@ -96,11 +101,11 @@ export async function upload(folder, files) {
 
   }
 
-  await Promise.all(uploads);
-
   if (res.length == 1) {
     res = res[0];
   }
+
+  Promise.all(uploads).then(callback);
 
   return res;
 }
@@ -133,7 +138,7 @@ export async function remove(id) {
   }
 
   // await deleteDoc(fileRef);
-  await updateDoc(fileRef, { dateRemoved: serverTimestamp() });
+  await updateDoc(fileRef, { dateRemoved: serverTimestamp(), useCount: 0 });
 }
 
 export function base64ToFile(str, filename = "Untitled") {
