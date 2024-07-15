@@ -956,6 +956,22 @@ describe('Storage', function() {
 });
 
 describe('Auth', function() {
+
+  it('shows as logged out', async function() {
+    this.timeout(10000); // sets timeout to 10 seconds
+    resetAuth();
+
+    const callback = sinon.spy();
+    auth.subscribe(callback);
+
+    await wait(1000);
+
+    assert.equal(callback.callCount, 1);
+    // assert.equal(callback.getCall(0).args[0], undefined);
+    // assert.equal(callback.getCall(1).args[0], false);
+    assert.equal(callback.getCall(0).args[0], false);
+  });
+
   it('can register', async function() {
     this.timeout(10000); // sets timeout to 10 seconds
     resetAuth();

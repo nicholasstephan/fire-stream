@@ -48,7 +48,7 @@ let init = () => {
         emit();
       });
     }
-    else if(user !== undefined) {
+    else {
       userId = false;
       user = false;
       emit();
@@ -58,11 +58,11 @@ let init = () => {
 }
 
 function subscribe(callback) {
-  init();
   subscribers.push(callback);
   if (user !== undefined) {
     emit();
   }
+  init();
   return () => subscribers = subscribers.filter(cb => cb != callback);
 }
 
