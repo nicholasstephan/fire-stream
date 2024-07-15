@@ -22,11 +22,12 @@ let user = undefined;   // either the user object or false if not logged in
 
 function emit() {
   if (user === undefined) return;
+  let data = {id:userId, ...user};
   while (resolvers.length) {
-    resolvers.shift()?.(user);
+    resolvers.shift()?.(data);
   }
   for (let subscriber of subscribers) {
-    subscriber?.(user);
+    subscriber?.(data);
   }
 }
 
@@ -68,7 +69,8 @@ function subscribe(callback) {
 
 function set(data) {
   if (!userId) return;
-  updateDoc(doc(getFirestore(), `users/${userId}`), data);
+  let {id, ...update} = data;
+  updateDoc(doc(getFirestore(), `users/${userId}`), update);
 }
 
 function get() {
