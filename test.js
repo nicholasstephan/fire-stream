@@ -4,7 +4,7 @@ import { initializeApp, getApp } from "firebase/app";
 import { getDatabase, ref, get, set, connectDatabaseEmulator } from "firebase/database";
 import { getFirestore, connectFirestoreEmulator, initializeFirestore, doc, collection, query, setDoc, getDoc, getDocs, addDoc } from "firebase/firestore";
 import { getStorage, connectStorageEmulator, uploadBytes, ref as storageRef, getDownloadURL } from "firebase/storage";
-// import { getAuth, connectAuthEmulator } from "firebase/auth";
+import { getAuth, connectAuthEmulator } from "firebase/auth";
 import { JSDOM } from "jsdom";
 import fs from 'fs/promises';
 import path from 'path';
@@ -17,13 +17,17 @@ global.atob = window.atob;
 
 import firestore from "./src/firestore/index.js";
 import database from "./src/database/index.js";
-import storage, { base64ToFile } from "./src/storage/index.js";
+import storage from "./src/storage/index.js";
+import auth, { resetAuth } from "./src/auth/index.js";
 
 initializeApp({
-  projectId: "fire-stream-e747b",
-  // authDomain: "fire-stream-e747b.firebaseapp.com",
+  apiKey: "AIzaSyBWUF4koDWXY5EZiPB7L-PrzCGtqm9ARCs",
+  authDomain: "fire-stream-e747b.firebaseapp.com",
   databaseURL: "https://fire-stream-e747b-default-rtdb.firebaseio.com",
+  projectId: "fire-stream-e747b",
   storageBucket: "fire-stream-e747b.appspot.com",
+  messagingSenderId: "451639905339",
+  appId: "1:451639905339:web:1ff409a4238b2e5de5201e"
 });
 
 initializeFirestore(getApp(), {
@@ -33,7 +37,7 @@ initializeFirestore(getApp(), {
 await connectFirestoreEmulator(getFirestore(), '127.0.0.1', 8080);
 await connectDatabaseEmulator(getDatabase(), "127.0.0.1", 9000);
 await connectStorageEmulator(getStorage(), '127.0.0.1', 9199);
-// await connectAuthEmulator(getAuth(), `http://127.0.0.1:9099`);
+await connectAuthEmulator(getAuth(), `http://127.0.0.1:9099`);
 
 async function wait(time) {
   return new Promise(resolve => setTimeout(resolve, time));
@@ -59,7 +63,6 @@ describe('Sanity', function() {
       assert.equal(snap.val(), testValue);
     }
     catch(error) {
-      console.log(error.message);
     }
   });
 
@@ -846,36 +849,189 @@ describe('Storage', function() {
   });
 
   it('will increment use count when used in database', async function() {
+    this.timeout(10000); // sets timeout to 10 seconds
+
     const data = new Uint8Array([0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x2c, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64, 0x21]);
     
-    await database("metallica").overwrite({
+    await database("metallica2").overwrite({
       name: "Metallica",
       file: data,
     });
 
-    let metallica = await database("metallica");
+    let metallica = await database("metallica2");
+    let storageId = metallica.file.storageId;
+    let file = metallica.file;
 
-    assert.ok(metallica.file.storageId);
+    let docSnap = await getDoc(doc(getFirestore(), "files", storageId));
+    let docData = docSnap.data();
 
-    await database("doors").overwrite({
+    wait(100);
+
+    assert.ok(storageId);
+    assert.equal(docData.useCount, 1);
+
+    await database("doors2").overwrite({
       name: "Doors",
-      file: metallica.file,
+      file: file,
     });
 
-    await wait(1000);
+    wait(100);
 
-    let docSnap = await getDoc(doc(getFirestore(), "files", metallica.file.storageId));
-    let docData = docSnap.data();
+    docSnap = await getDoc(doc(getFirestore(), "files", storageId));
+    docData = docSnap.data();
+
     assert.equal(docData.useCount, 2);
 
   });
 
   it('will add file on database update', async function() {
 
+    await database("file").set({
+      name: "Doors",
+    });
+
+    await database("file").update({
+      file: new Uint8Array([0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x2c, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64, 0x21]),
+    });
+
+    let snap = await get(ref(getDatabase(), "file"));
+    let snapData = snap.val();
+
+    assert.equal(snapData.name, "Doors");
+    assert.ok(snapData.file.folder);
+    assert.ok(snapData.file.storageId);
+
+    let value = await firestore(`files/${snapData.file.storageId}`);
+
+    assert.ok(value);
   });
 
   it('will remove file on database update', async function() {
+    // add a file and associated firestore entry
+    const data = new Uint8Array([0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x2c, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64, 0x21]);
 
+    const id = `file${Date.now()}`;
+    const location = `uploads/${id}`;
+
+    await setDoc(doc(getFirestore(), "files", id), {
+      name: "test.txt",
+      location: location,
+      useCount: 1,
+    });
+
+    let uploadSnap = await uploadBytes(storageRef(getStorage(), location), data.buffer);
+    assert.ok(uploadSnap);
+
+    const value = {
+      name: "Fire Starter",
+      file: {
+        folder: 'uploads',
+        storageId: id,
+      }
+    };
+
+    await set(ref(getDatabase(), "prodegy"), value);
+
+
+    await database("prodegy").update({
+      file: null,
+    });
+
+    // check the file is removed from storage
+    let docSnap = await getDoc(doc(getFirestore(), "files", id));
+    let docData = docSnap.data();
+
+    assert.ok(docData.dateRemoved);
+
+    try {
+      await getDownloadURL(storageRef(getStorage(), location));
+    }
+    catch(error) {
+      assert.equal(error.code, 'storage/object-not-found');
+    }
+
+
+  });
+
+});
+
+describe('Auth', function() {
+  it('can register', async function() {
+    this.timeout(10000); // sets timeout to 10 seconds
+    resetAuth();
+
+    await auth.register('alberto.rvx@gmail.com', 'testing');
+    let user = auth.get();
+    assert.ok(user);
+    assert.ok(user.dateCreated);
+    assert.ok(user.dateLastLogin);
+    assert.equal(user.email, 'alberto.rvx@gmail.com');
+  });
+
+  it('can log out and back in', async function() {
+    this.timeout(10000); // sets timeout to 10 seconds
+    resetAuth();
+    
+    let email = 'alberto.rvx+2@gmail.com'
+
+    await auth.register(email, 'testing');
+    let user = auth.get();
+    assert.ok(user);
+    assert.ok(user.dateCreated);
+    assert.ok(user.dateLastLogin);
+    assert.equal(user.email, email);
+
+    await auth.logout();
+
+    await wait(100);
+
+    user = auth.get();
+    assert.equal(user, false);
+  });
+
+  it('can subscribe to user status', async function() {
+    this.timeout(10000); // sets timeout to 10 seconds
+    resetAuth();
+
+    const callback = sinon.spy();
+    const email = 'alberto.rvx+3@gmail.com';
+
+    auth.subscribe(callback);
+    
+    await auth.register(email, 'testing');
+    await wait(100);
+    assert.equal(callback.callCount, 1);
+    assert.equal(callback.getCall(0).args[0].email, email);
+    
+    await auth.logout();
+    await wait(100);
+    assert.equal(callback.callCount, 2);
+    assert.equal(callback.getCall(1).args[0], false);
+    
+    await auth.login(email, 'testing');
+    await wait(100);
+    assert.equal(callback.callCount, 3);
+    assert.equal(callback.getCall(2).args[0].email, email);
+  });
+
+  it('can subscribe to user info', async function() {
+    this.timeout(10000); // sets timeout to 10 seconds
+    resetAuth();
+
+    const callback = sinon.spy();
+    const email = 'alberto.rvx+4@gmail.com';
+
+    auth.subscribe(callback);
+    
+    await auth.register(email, 'testing');
+    await wait(100);
+    assert.equal(callback.callCount, 1);
+    assert.equal(callback.getCall(0).args[0].email, email);
+    
+    auth.set({name: 'Alberto'});
+    await wait(100);
+    assert.equal(callback.callCount, 2);
+    assert.equal(callback.getCall(1).args[0].name, "Alberto");
   });
 
 });

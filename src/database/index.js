@@ -15,7 +15,7 @@ import {
   remove as removeValue,
 } from "firebase/database";
 
-import { upload, remove } from '../storage/index.js';
+import { upload, remove, use } from '../storage/index.js';
 
 const isObject = v => v instanceof Object;
 const isFile = v => v instanceof Uint8Array || v instanceof Blob || v instanceof File;
@@ -32,7 +32,7 @@ const defaultOptions = {
   startWith: null,
 };
 
-export const noop = (startWith = null) => ({
+const noop = (startWith = null) => ({
   subscribe: callback => {
     callback(startWith);
     return () => null;
@@ -149,7 +149,7 @@ export default function (url, options = {}) {
     return value;
   };
 
-  let set = async val => {
+  let set = async newValue => {
     if (!isLoaded) {
       let existingValue = await getValue(ref);
       if (existingValue.exists()) {
@@ -158,26 +158,32 @@ export default function (url, options = {}) {
       }
     }
 
-    val = await uploadFiles(val);
-    await removeFiles(value, val);
+    newValue = await addFiles(newValue);
+    await removeFiles(value, newValue);
     
-    return setValue(ref, val);
+    return setValue(ref, newValue);
   };
 
-  let update = val => {
-    if (typeof val == 'string') {
-      return set(val);
+  let update = async newValue => {
+    if (typeof newValue == 'string') {
+      return set(newValue);
     }
     else {
-      updateValue(ref, val);
+      if(!value) {
+        let snap = await getValue(ref);
+        value = snap.val();
+      }
+      newValue = await addFiles(newValue);
+      await removeFiles(value, newValue);
+      return updateValue(ref, newValue);
     }
   };
 
-  let overwrite = async val => {
+  let overwrite = async newValue => {
     let snap = await getValue(ref);
     value = snap.val();
     isLoaded = true;
-    return set(val);
+    return set(newValue);
   };
 
   let remove = async () => {
@@ -222,18 +228,24 @@ export default function (url, options = {}) {
 
 }
 
-async function uploadFiles(value) {
+async function addFiles(value) {
   if(isFile(value)) {
     let id = await upload('uploads', value);
+    await use(id);
     return {
       folder: 'uploads',
       storageId: id,
     }
   }
+  if(value?.storageId) {
+    await use(value.storageId);
+    return value;
+  }
   if(isObject(value)) {
     for(let key in value) {
-      value[key] = await uploadFiles(value[key]);
+      value[key] = await addFiles(value[key]);
     }
+    return value;
   }
   return value;
 }
@@ -243,8 +255,9 @@ async function removeFiles(oldValue, newValue) {
     if(newValue?.storageId != oldValue.storageId) {
       return remove(oldValue.storageId);
     }
+    return;
   }
-  else if(isObject(oldValue)) {
+  if(isObject(oldValue)) {
     for(let key in oldValue) {
       await removeFiles(oldValue[key], newValue?.[key]);
     }

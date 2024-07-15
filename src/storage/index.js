@@ -25,6 +25,7 @@ export default function (folder = "uploads") {
     upload: e => upload(folder, e),
     remove: id => remove(id),
     url: id => url(folder, id),
+    use: id => use(id),
   };
 };
 
@@ -68,6 +69,7 @@ export async function upload(folder, files, callback) {
       type: file.type,
       size: file.size,
       uploadProgress: 0,
+      useCount: 0,
     });
 
     let id = fileDoc.id;
@@ -90,7 +92,6 @@ export async function upload(folder, files, callback) {
               location: location,
               uploadProgress: deleteField(),
               uploadError: deleteField(),
-              useCount: 0,
             });
             resolve();
           }
@@ -108,6 +109,11 @@ export async function upload(folder, files, callback) {
   Promise.all(uploads).then(callback);
 
   return res;
+}
+
+export async function use(id) {
+  let fileRef = doc(getFirestore(), `files/${id}`);
+  await updateDoc(fileRef, { useCount: increment(1) });
 }
 
 export async function remove(id) {
