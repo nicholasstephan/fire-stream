@@ -22,13 +22,11 @@ let user = undefined;   // either the user object or false if not logged in
 
 function emit() {
   if (user === undefined) return;
-  let data = {id:userId, ...user};
-  console.log('emitting', data);
   while (resolvers.length) {
-    resolvers.shift()?.(data);
+    resolvers.shift()?.(get());
   }
   for (let subscriber of subscribers) {
-    subscriber?.(data);
+    subscriber?.(get());
   }
 }
 
@@ -75,7 +73,8 @@ function set(data) {
 }
 
 function get() {
-  return user;
+  if(!userId) return false;
+  return {id:userId, ...user};
 }
 
 export function resetAuth() {

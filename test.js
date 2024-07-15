@@ -979,6 +979,7 @@ describe('Auth', function() {
     assert.ok(user);
     assert.ok(user.dateCreated);
     assert.ok(user.dateLastLogin);
+    assert.ok(user.id);
     assert.equal(user.email, email);
 
     await auth.logout();
