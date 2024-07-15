@@ -23,6 +23,7 @@ let user = undefined;   // either the user object or false if not logged in
 function emit() {
   if (user === undefined) return;
   let data = {id:userId, ...user};
+  console.log('emitting', data);
   while (resolvers.length) {
     resolvers.shift()?.(data);
   }
@@ -62,7 +63,7 @@ function subscribe(callback) {
   init();
   subscribers.push(callback);
   if (user !== undefined) {
-    callback(user);
+    emit();
   }
   return () => subscribers = subscribers.filter(cb => cb != callback);
 }
