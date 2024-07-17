@@ -53,8 +53,6 @@ export async function upload(folder, files, callback) {
   if (files?.buffer) files = files.buffer; // for Unit8Arrays
   if (!files?.length) files = [files]; // make sure it's a list
 
-  let ext = "";
-
   let uploads = [];
   let res = [];
 
@@ -106,7 +104,7 @@ export async function upload(folder, files, callback) {
     res = res[0];
   }
 
-  Promise.all(uploads).then(callback);
+  Promise.all(uploads).then(() => callback?.(res));
 
   return res;
 }

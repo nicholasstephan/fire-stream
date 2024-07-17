@@ -158,8 +158,8 @@ export default function (url, options = {}) {
       }
     }
 
-    newValue = await addFiles(newValue);
-    await removeFiles(value, newValue);
+    newValue = addFiles(options.url, newValue);
+    removeFiles(value, newValue);
     
     return setValue(ref, newValue);
   };
@@ -173,8 +173,8 @@ export default function (url, options = {}) {
         let snap = await getValue(ref);
         value = snap.val();
       }
-      newValue = await addFiles(newValue);
-      await removeFiles(value, newValue);
+      newValue = addFiles(options.url, newValue);
+      removeFiles(value, newValue);
       return updateValue(ref, newValue);
     }
   };
@@ -191,7 +191,7 @@ export default function (url, options = {}) {
       let snap = await getValue(ref);
       value = snap.val();
     }
-    await removeFiles(value);
+    removeFiles(value);
     value = null;
     removeValue(ref);
   };
@@ -228,38 +228,39 @@ export default function (url, options = {}) {
 
 }
 
-async function addFiles(value) {
+function addFiles(path, value) {
   if(isFile(value)) {
-    let id = await upload('uploads', value);
-    await use(id);
+    upload('uploads', value, id => {
+      use(id);
+      setValue(databaseRef(getDatabase(), `${path}/storageId`), id);
+    });
     return {
       folder: 'uploads',
-      storageId: id,
-    }
+    };
   }
   if(value?.storageId) {
-    await use(value.storageId);
+    use(value.storageId);
     return value;
   }
   if(isObject(value)) {
     for(let key in value) {
-      value[key] = await addFiles(value[key]);
+      value[key] = addFiles(`${path}/${key}`, value[key]);
     }
     return value;
   }
   return value;
 }
 
-async function removeFiles(oldValue, newValue) {
+function removeFiles(oldValue, newValue) {
   if(oldValue?.storageId) {
     if(newValue?.storageId != oldValue.storageId) {
-      return remove(oldValue.storageId);
+      remove(oldValue.storageId);
     }
     return;
   }
   if(isObject(oldValue)) {
     for(let key in oldValue) {
-      await removeFiles(oldValue[key], newValue?.[key]);
+      removeFiles(oldValue[key], newValue?.[key]);
     }
   }
 }

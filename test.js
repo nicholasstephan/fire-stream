@@ -693,6 +693,8 @@ describe('Storage', function() {
 
     await database("file").set(data);
 
+    await wait(1000);
+
     let snap = await get(ref(getDatabase(), "file"));
     let snapData = snap.val();
 
@@ -738,6 +740,8 @@ describe('Storage', function() {
       // note that the file property is missing
     });
 
+    await wait(1000);
+
     // check the file is removed from storage
     let docSnap = await getDoc(doc(getFirestore(), "files", id));
     let docData = docSnap.data();
@@ -754,6 +758,8 @@ describe('Storage', function() {
   });
 
   it('will remove stored file on database remove', async function() {
+
+    this.timeout(10000); // sets timeout to 10 seconds
 
     // add a file and associated firestore entry
     const data = new Uint8Array([0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x2c, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64, 0x21]);
@@ -781,6 +787,8 @@ describe('Storage', function() {
     await set(ref(getDatabase(), "prodegy"), value);
 
     await database("prodegy").remove();
+
+    await wait(1000);
 
     // check the file is removed from storage
     let docSnap = await getDoc(doc(getFirestore(), "files", id));
@@ -829,6 +837,8 @@ describe('Storage', function() {
       file: data
     });
 
+    await wait(1000);
+
     // check the file is removed from storage
     let docSnap = await getDoc(doc(getFirestore(), "files", id));
     let docData = docSnap.data();
@@ -857,6 +867,8 @@ describe('Storage', function() {
       name: "Metallica",
       file: data,
     });
+
+    await wait(1000);
 
     let metallica = await database("metallica2");
     let storageId = metallica.file.storageId;
@@ -893,6 +905,8 @@ describe('Storage', function() {
     await database("file").update({
       file: new Uint8Array([0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x2c, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64, 0x21]),
     });
+
+    await wait(1000);
 
     let snap = await get(ref(getDatabase(), "file"));
     let snapData = snap.val();
@@ -936,6 +950,8 @@ describe('Storage', function() {
     await database("prodegy").update({
       file: null,
     });
+
+    await wait(1000);
 
     // check the file is removed from storage
     let docSnap = await getDoc(doc(getFirestore(), "files", id));
