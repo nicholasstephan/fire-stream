@@ -157,10 +157,8 @@ export default function (url, options = {}) {
         return;
       }
     }
-
     newValue = addFiles(options.url, newValue);
     removeFiles(value, newValue);
-    
     return setValue(ref, newValue);
   };
 
