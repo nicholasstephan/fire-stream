@@ -157,8 +157,8 @@ export default function (url, options = {}) {
         return;
       }
     }
-    newValue = addFiles(options.url, newValue);
-    removeFiles(value, newValue);
+    newValue = await addFiles(options.url, newValue);
+    await removeFiles(value, newValue);
     return setValue(ref, newValue);
   };
 
@@ -171,8 +171,8 @@ export default function (url, options = {}) {
         let snap = await getValue(ref);
         value = snap.val();
       }
-      newValue = addFiles(options.url, newValue);
-      removeFiles(value, newValue);
+      newValue = await addFiles(options.url, newValue);
+      await removeFiles(value, newValue);
       return updateValue(ref, newValue);
     }
   };
@@ -226,18 +226,15 @@ export default function (url, options = {}) {
 
 }
 
-function addFiles(path, value) {
+async function addFiles(path, value) {
   if(isFile(value)) {
-    upload('uploads', value.file, id => {
-      use(id);
-      setValue(databaseRef(getDatabase(), `${path}/storageId`), id);
-      getStorageUrl('uploads', id).then(url => {
-        setValue(databaseRef(getDatabase(), `${path}/url`), url);
-      });
-    });
+    let storageId = await upload('uploads', value.file);
+    let url = getStorageUrl('uploads', storageId);
+    await use(storageId);
     return {
+      storageId: storageId,
       folder: 'uploads',
-      url: null,
+      url: url,
       file: null,
     };
   }
@@ -247,23 +244,23 @@ function addFiles(path, value) {
   }
   if(isObject(value)) {
     for(let key in value) {
-      value[key] = addFiles(`${path}/${key}`, value[key]);
+      value[key] = await addFiles(`${path}/${key}`, value[key]);
     }
     return value;
   }
   return value;
 }
 
-function removeFiles(oldValue, newValue) {
+async function removeFiles(oldValue, newValue) {
   if(oldValue?.storageId) {
     if(newValue?.storageId != oldValue.storageId) {
-      remove(oldValue.storageId);
+      await remove(oldValue.storageId);
     }
     return;
   }
   if(isObject(oldValue)) {
     for(let key in oldValue) {
-      removeFiles(oldValue[key], newValue?.[key]);
+      await removeFiles(oldValue[key], newValue?.[key]);
     }
   }
 }

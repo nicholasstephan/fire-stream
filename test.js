@@ -906,28 +906,26 @@ describe('Storage', function() {
 
   it('will add file on database update', async function() {
 
-    let db = database("file");
+    let db = database("addfileonupdate");
 
     await db.overwrite({
       name: "Doors",
     });
 
     await db.update({
-      file: {
+      image: {
         file: new Uint8Array([0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x2c, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64, 0x21]),
       }
     });
 
-    await wait(1000);
-
-    let snap = await get(ref(getDatabase(), "file"));
+    let snap = await get(ref(getDatabase(), "addfileonupdate"));
     let snapData = snap.val();
 
     assert.equal(snapData.name, "Doors");
-    assert.ok(snapData.file.folder);
-    assert.ok(snapData.file.storageId);
+    assert.ok(snapData.image.folder);
+    assert.ok(snapData.image.storageId);
 
-    let value = await firestore(`files/${snapData.file.storageId}`);
+    let value = await firestore(`files/${snapData.image.storageId}`);
 
     assert.ok(value);
   });
