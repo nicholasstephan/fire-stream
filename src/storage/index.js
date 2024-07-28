@@ -53,6 +53,8 @@ export async function upload(folder, files, callback) {
   if (files?.buffer) files = files.buffer; // for Unit8Arrays
   if (!files?.length) files = [files]; // make sure it's a list
 
+  console.log('uploading', files);
+
   let uploads = [];
   let res = [];
 

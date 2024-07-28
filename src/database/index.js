@@ -228,7 +228,9 @@ export default function (url, options = {}) {
 
 async function addFiles(path, value) {
   if(isFile(value)) {
+    console.log('found file', value);
     let storageId = await upload('uploads', value.file);
+    console.log('uploaded', storageId);
     let url = getStorageUrl('uploads', storageId);
     await use(storageId);
     return {
