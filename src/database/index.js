@@ -18,7 +18,7 @@ import {
 import { upload, remove, use, url as getStorageUrl } from '../storage/index.js';
 
 const isObject = v => v instanceof Object;
-const isFile = v => v instanceof Uint8Array || v instanceof Blob || v instanceof File;
+const isFile = v => v?.file instanceof Uint8Array || v?.file instanceof Blob || v?.file instanceof File;
 
 
 
@@ -228,15 +228,17 @@ export default function (url, options = {}) {
 
 function addFiles(path, value) {
   if(isFile(value)) {
-    upload('uploads', value, id => {
+    upload('uploads', value.file, id => {
       use(id);
+      setValue(databaseRef(getDatabase(), `${path}/storageId`), id);
       getStorageUrl('uploads', id).then(url => {
         setValue(databaseRef(getDatabase(), `${path}/url`), url);
       });
-      setValue(databaseRef(getDatabase(), `${path}/storageId`), id);
     });
     return {
       folder: 'uploads',
+      url: null,
+      file: null,
     };
   }
   if(value?.storageId) {

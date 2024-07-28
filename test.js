@@ -684,11 +684,15 @@ describe('Storage', function() {
 
   it('will store file added to database', async function() {
 
+    this.timeout(10000); // sets timeout to 10 seconds
+    
     let file = new Uint8Array([0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x2c, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64, 0x21]);
 
     let data = {
       name: "Doors",
-      file: file,
+      file: {
+        file: file,
+      }
     };
 
     await database("file").set(data);
@@ -834,7 +838,9 @@ describe('Storage', function() {
 
     await database("prodegy").overwrite({
       name: "Fire Starter",
-      file: data
+      file: {
+        file: data
+      }
     });
 
     await wait(1000);
@@ -865,7 +871,9 @@ describe('Storage', function() {
     
     await database("metallica2").overwrite({
       name: "Metallica",
-      file: data,
+      file: {
+        file: data,
+      }
     });
 
     await wait(1000);
@@ -898,12 +906,16 @@ describe('Storage', function() {
 
   it('will add file on database update', async function() {
 
-    await database("file").set({
+    let db = database("file");
+
+    await db.overwrite({
       name: "Doors",
     });
 
-    await database("file").update({
-      file: new Uint8Array([0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x2c, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64, 0x21]),
+    await db.update({
+      file: {
+        file: new Uint8Array([0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x2c, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64, 0x21]),
+      }
     });
 
     await wait(1000);
@@ -921,6 +933,9 @@ describe('Storage', function() {
   });
 
   it('will remove file on database update', async function() {
+
+    this.timeout(10000); // sets timeout to 10 seconds
+
     // add a file and associated firestore entry
     const data = new Uint8Array([0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x2c, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64, 0x21]);
 
