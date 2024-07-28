@@ -15,7 +15,7 @@ import {
   remove as removeValue,
 } from "firebase/database";
 
-import { upload, remove, use } from '../storage/index.js';
+import { upload, remove, use, url as getStorageUrl } from '../storage/index.js';
 
 const isObject = v => v instanceof Object;
 const isFile = v => v instanceof Uint8Array || v instanceof Blob || v instanceof File;
@@ -230,6 +230,9 @@ function addFiles(path, value) {
   if(isFile(value)) {
     upload('uploads', value, id => {
       use(id);
+      getStorageUrl('uploads', id).then(url => {
+        setValue(databaseRef(getDatabase(), `${path}/url`), url);
+      });
       setValue(databaseRef(getDatabase(), `${path}/storageId`), id);
     });
     return {
