@@ -239,7 +239,7 @@ async function addFiles(path, value) {
     };
   }
   if(value?.storageId) {
-    use(value.storageId);
+    await use(value.storageId);
     return value;
   }
   if(isObject(value)) {

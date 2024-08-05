@@ -6,8 +6,6 @@ import { getFirestore, connectFirestoreEmulator, initializeFirestore, doc, colle
 import { getStorage, connectStorageEmulator, uploadBytes, ref as storageRef, getDownloadURL } from "firebase/storage";
 import { getAuth, connectAuthEmulator } from "firebase/auth";
 import { JSDOM } from "jsdom";
-import fs from 'fs/promises';
-import path from 'path';
 import fetch from 'node-fetch';
 
 const { window } = new JSDOM('');
@@ -901,6 +899,51 @@ describe('Storage', function() {
     docData = docSnap.data();
 
     assert.equal(docData.useCount, 2);
+
+  });
+
+  it('will manage count when file is moved in database', async function() {
+    this.timeout(10000); // sets timeout to 10 seconds
+
+    const data = new Uint8Array([0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x2c, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64, 0x21]);
+    
+    await database("metallica3").overwrite({
+      name: "Metallica",
+      files: [
+        {
+          file: data,
+        },
+        {
+          file: data,
+        },
+        {
+          file: data,
+        },        
+      ],
+    });
+
+    await wait(1000);
+
+    let metallica = await database("metallica3");
+    let storageId = metallica.files[0].storageId;
+
+    let docSnap = await getDoc(doc(getFirestore(), "files", storageId));
+    let docData = docSnap.data();
+
+    wait(100);
+
+    assert.ok(storageId);
+    assert.equal(docData.useCount, 1);
+
+    metallica.files.push(metallica.files.shift());
+    await database("metallica3").overwrite(metallica);
+
+    wait(100);
+
+    docSnap = await getDoc(doc(getFirestore(), "files", storageId));
+    docData = docSnap.data();
+
+    assert.equal(docData.useCount, 1);
 
   });
 
