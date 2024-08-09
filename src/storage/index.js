@@ -10,7 +10,6 @@ import {
   getFirestore,
   collection,
   doc,
-  deleteDoc,
   getDoc,
   addDoc,
   updateDoc,
@@ -34,9 +33,7 @@ export function url(folder, id) {
     id = folder.storageId;
     folder = folder.folder;
   }
-
-  let location = `${folder}/${id}`;
-  return getDownloadURL(ref(getStorage(), location));
+  return getDownloadURL(ref(getStorage(), `${folder}/${id}`));
 }
 
 export async function upload(folder, files, callback) {
@@ -127,21 +124,8 @@ export async function remove(id) {
     return;
   }
 
-  // remove original.
-  let storageRef = ref(getStorage(), file.location);
-  await deleteObject(storageRef);
+  await deleteObject(ref(getStorage(), file.location));
 
-  // remove each derrived
-  for (let derivedId in file.derived || {}) {
-    let location = file.derived[derivedId].location;
-    if (!location) {
-      continue;
-    }
-    let storageRef = ref(getStorage(), location);
-    await deleteObject(storageRef);
-  }
-
-  // await deleteDoc(fileRef);
   await updateDoc(fileRef, { dateRemoved: serverTimestamp(), useCount: 0 });
 }
 

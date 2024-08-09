@@ -153,7 +153,7 @@ export default function (url, options = {}) {
     if (!isLoaded) {
       let existingValue = await getValue(ref);
       if (existingValue.exists()) {
-        console.warn(`WARNING: You're trying to set a value (${options.url}) before it has been loaded. If you're intentially doing this, use 'overwrite' instead.`);
+        console.error(`You're trying to set a value (${options.url}) before it has been loaded. If you're intentially doing this, use 'overwrite' instead.`);
         return;
       }
     }
@@ -226,7 +226,7 @@ export default function (url, options = {}) {
 
 }
 
-async function addFiles(path, value, newValue) {
+async function addFiles(path, oldValue, newValue) {
   if(isFile(newValue)) {
     let storageId = await upload('uploads', newValue.file, (storageId) => use(storageId));
     return {
@@ -235,13 +235,13 @@ async function addFiles(path, value, newValue) {
       file: null,
     };
   }
-  if(newValue?.storageId && newValue.storageId != value?.storageId) {
+  if(newValue?.storageId && newValue.storageId != oldValue?.storageId) {
     await use(newValue.storageId);
     return newValue;
   }
   if(isObject(newValue)) {
     for(let key in newValue) {
-      newValue[key] = await addFiles(`${path}/${key}`, value?.[key], newValue[key]);
+      newValue[key] = await addFiles(`${path}/${key}`, oldValue?.[key], newValue[key]);
     }
     return newValue;
   }

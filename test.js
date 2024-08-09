@@ -807,6 +807,54 @@ describe('Storage', function() {
 
   });
 
+  it('will remove stored file on database remove 2', async function() {
+
+    this.timeout(10000); // sets timeout to 10 seconds
+
+    // add a file and associated firestore entry
+    const data = new Uint8Array([0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x2c, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64, 0x21]);
+
+    const id = `file${Date.now()}`;
+    const location = `uploads/${id}`;
+
+    await setDoc(doc(getFirestore(), "files", id), {
+      name: "test.txt",
+      location: location,
+      useCount: 1,
+    });
+
+    let uploadSnap = await uploadBytes(storageRef(getStorage(), location), data.buffer);
+    assert.ok(uploadSnap);
+
+    const value = {
+      name: "Fire Starter",
+      file: {
+        folder: 'uploads',
+        storageId: id,
+      }
+    };
+
+    await set(ref(getDatabase(), "prodegy"), value);
+
+    await database("prodegy").overwrite(null);
+
+    await wait(1000);
+
+    // check the file is removed from storage
+    let docSnap = await getDoc(doc(getFirestore(), "files", id));
+    let docData = docSnap.data();
+
+    assert.ok(docData.dateRemoved);
+
+    try {
+      await getDownloadURL(storageRef(getStorage(), location));
+    }
+    catch(error) {
+      assert.equal(error.code, 'storage/object-not-found');
+    }
+
+  });
+
   it('will remove stored file on database file replaced', async function() {
 
     // add a file and associated firestore entry
