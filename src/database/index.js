@@ -228,13 +228,10 @@ export default function (url, options = {}) {
 
 async function addFiles(path, value, newValue) {
   if(isFile(newValue)) {
-    let storageId = await upload('uploads', newValue.file);
-    let url = await getStorageUrl('uploads', storageId);
-    await use(storageId);
+    let storageId = await upload('uploads', newValue.file, (storageId) => use(storageId));
     return {
       storageId: storageId,
       folder: 'uploads',
-      url: url,
       file: null,
     };
   }

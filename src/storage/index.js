@@ -100,13 +100,12 @@ export async function upload(folder, files, callback) {
 
   }
 
-  await Promise.all(uploads)
-
   if (res.length == 1) {
     res = res[0];
   }
 
-  callback?.(res);
+  Promise.all(uploads).then(() => callback?.(res));
+
   return res;
 }
 
