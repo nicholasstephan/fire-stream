@@ -15,7 +15,7 @@ import {
   remove as removeValue,
 } from "firebase/database";
 
-import { upload, remove, use, url as getStorageUrl } from '../storage/index.js';
+import { upload, remove, use } from '../storage/index.js';
 
 const isObject = v => v instanceof Object;
 const isFile = v => !v?.storageId && (v?.file instanceof Uint8Array || v?.file instanceof Blob || v?.file instanceof File);
@@ -157,7 +157,6 @@ export default function (url, options = {}) {
         return;
       }
     }
-    console.log('setting', JSON.stringify(value), JSON.stringify(newValue));
     newValue = await addFiles(options.url, value, newValue);
     await removeFiles(value, newValue);
     return setValue(ref, newValue);
@@ -252,7 +251,6 @@ async function addFiles(path, oldValue, newValue) {
 async function removeFiles(oldValue, newValue) {
   if(oldValue?.storageId) {
     if(newValue?.storageId != oldValue.storageId) {
-      console.log('removing storage', oldValue.storageId);
       await remove(oldValue.storageId);
     }
     return;
