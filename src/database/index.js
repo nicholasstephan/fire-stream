@@ -172,7 +172,7 @@ export default function (url, options = {}) {
         let snap = await getValue(ref);
         value = snap.val();
       }
-      newValue = await addFiles(options.url, value, newValue);
+      newValue = await addFiles(options.url, JSON.stringify(value, null, 2), JSON.stringify(newValue, null, 2));
       await removeFiles(value, newValue);
       return updateValue(ref, newValue);
     }
