@@ -157,6 +157,7 @@ export default function (url, options = {}) {
         return;
       }
     }
+    console.log('setting', value, newValue);
     newValue = await addFiles(options.url, value, newValue);
     await removeFiles(value, newValue);
     return setValue(ref, newValue);
@@ -251,6 +252,7 @@ async function addFiles(path, oldValue, newValue) {
 async function removeFiles(oldValue, newValue) {
   if(oldValue?.storageId) {
     if(newValue?.storageId != oldValue.storageId) {
+      console.log('removing storage', oldValue.storageId);
       await remove(oldValue.storageId);
     }
     return;
