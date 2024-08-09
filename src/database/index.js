@@ -18,7 +18,7 @@ import {
 import { upload, remove, use, url as getStorageUrl } from '../storage/index.js';
 
 const isObject = v => v instanceof Object;
-const isFile = v => v?.file instanceof Uint8Array || v?.file instanceof Blob || v?.file instanceof File;
+const isFile = v => !v?.storageId && (v?.file instanceof Uint8Array || v?.file instanceof Blob || v?.file instanceof File);
 
 
 
@@ -157,7 +157,7 @@ export default function (url, options = {}) {
         return;
       }
     }
-    newValue = await addFiles(options.url, newValue);
+    newValue = await addFiles(options.url, value, newValue);
     await removeFiles(value, newValue);
     return setValue(ref, newValue);
   };
@@ -171,7 +171,7 @@ export default function (url, options = {}) {
         let snap = await getValue(ref);
         value = snap.val();
       }
-      newValue = await addFiles(options.url, newValue);
+      newValue = await addFiles(options.url, value, newValue);
       await removeFiles(value, newValue);
       return updateValue(ref, newValue);
     }
@@ -226,9 +226,9 @@ export default function (url, options = {}) {
 
 }
 
-async function addFiles(path, value) {
-  if(isFile(value)) {
-    let storageId = await upload('uploads', value.file);
+async function addFiles(path, value, newValue) {
+  if(isFile(newValue)) {
+    let storageId = await upload('uploads', newValue.file);
     let url = await getStorageUrl('uploads', storageId);
     await use(storageId);
     return {
@@ -238,17 +238,17 @@ async function addFiles(path, value) {
       file: null,
     };
   }
-  if(value?.storageId) {
-    await use(value.storageId);
-    return value;
+  if(newValue?.storageId && newValue.storageId != value?.storageId) {
+    await use(newValue.storageId);
+    return newValue;
   }
-  if(isObject(value)) {
-    for(let key in value) {
-      value[key] = await addFiles(`${path}/${key}`, value[key]);
+  if(isObject(newValue)) {
+    for(let key in newValue) {
+      newValue[key] = await addFiles(`${path}/${key}`, value?.[key], newValue[key]);
     }
-    return value;
+    return newValue;
   }
-  return value;
+  return newValue;
 }
 
 async function removeFiles(oldValue, newValue) {

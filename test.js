@@ -902,6 +902,43 @@ describe('Storage', function() {
 
   });
 
+  it('will manage count when database is updated', async function() {
+    this.timeout(10000); // sets timeout to 10 seconds
+
+    const data = new Uint8Array([0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x2c, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64, 0x21]);
+    
+    await database("metallica2").overwrite({
+      name: "Metallica",
+      file: {
+        file: data,
+      }
+    });
+
+    await wait(1000);
+
+    let metallica = await database("metallica2");
+    let storageId = metallica.file.storageId;
+    let file = metallica.file;
+
+    let docSnap = await getDoc(doc(getFirestore(), "files", storageId));
+    let docData = docSnap.data();
+
+    wait(100);
+
+    assert.ok(storageId);
+    assert.equal(docData.useCount, 1);
+
+    metallica.name = "Metallica 2";
+    await database("metallica2").overwrite(metallica);
+
+    wait(100);
+
+    docSnap = await getDoc(doc(getFirestore(), "files", storageId));
+    docData = docSnap.data();
+    assert.equal(docData.useCount, 1);
+
+  });
+
   it('will manage count when file is moved in database', async function() {
     this.timeout(10000); // sets timeout to 10 seconds
 
