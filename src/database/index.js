@@ -157,7 +157,7 @@ export default function (url, options = {}) {
         return;
       }
     }
-    console.log('setting', value, newValue);
+    console.log('setting', JSON.stringify(value), JSON.stringify(newValue));
     newValue = await addFiles(options.url, value, newValue);
     await removeFiles(value, newValue);
     return setValue(ref, newValue);
