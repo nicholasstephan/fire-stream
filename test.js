@@ -908,7 +908,7 @@ describe('Storage', function() {
 
     assert.notEqual(newData.file.storageId, id);
 
-  });
+  }); 
 
   it('will increment use count when used in database', async function() {
     this.timeout(10000); // sets timeout to 10 seconds
@@ -1107,8 +1107,75 @@ describe('Storage', function() {
       assert.equal(error.code, 'storage/object-not-found');
     }
 
-
   });
+
+  it.only('works with mutated values', function(done) {
+
+    this.timeout(30000); // sets timeout to 10 seconds
+
+    const data = new Uint8Array([0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x2c, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64, 0x21]);
+
+    let wasStorageId;
+    let isStorageId;
+
+    database("metallica2")
+      .overwrite({
+        count: 1,
+        name: "Metallica",
+        file: {
+          file: data,
+        }
+      })
+      .then(async () => {
+        
+        await wait(1000);
+
+        let sub = database("metallica2");
+        sub.subscribe(async value => {
+
+          await wait(1000);
+
+          assert.ok(value.file.storageId);
+          
+          if(value.count == 1) {
+            wasStorageId = value.file.storageId;
+
+            let docSnap = await getDoc(doc(getFirestore(), "files", wasStorageId));
+            let docData = docSnap.data();
+
+            assert.equal(docData.useCount, 1);
+
+            value.count = 2;
+            value.file = {
+              file: data,
+            };
+            sub.set(value);
+          }
+          else {
+
+            isStorageId = value.file.storageId;
+
+            let docSnap = await getDoc(doc(getFirestore(), "files", wasStorageId));
+            let docData = docSnap.data();
+
+            assert.equal(docData.useCount, 0);
+            assert.ok(docData.dateRemoved);
+
+            try {
+              await getDownloadURL(storageRef(getStorage(), docData.location));
+            }
+            catch(error) {
+              assert.equal(error.code, 'storage/object-not-found');
+            }
+
+            done();
+          }
+
+        });
+
+      });
+
+  })
 
 });
 

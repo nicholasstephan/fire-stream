@@ -24,11 +24,6 @@ const isFile = v => !v?.storageId && (v?.file instanceof Uint8Array || v?.file i
 
 
 const defaultOptions = {
-  // An initial value to return before the data is loaded, 
-  // or if the data is null. 
-  // If both the data and startWith are objects, the data 
-  // will be merged with startWith to continue supplying
-  // default values. 
   startWith: null,
 };
 
@@ -48,6 +43,56 @@ const noop = (startWith = null) => ({
   push: () => null,
   add: () => null,
 });
+
+async function addFiles(path, oldValue, newValue) {
+  if(isFile(newValue)) {
+    let storageId = await upload('uploads', newValue.file, (storageId) => use(storageId));
+    return {
+      storageId: storageId,
+      folder: 'uploads',
+      file: null,
+    };
+  }
+  if(newValue?.storageId && newValue.storageId != oldValue?.storageId) {
+    await use(newValue.storageId);
+    return newValue;
+  }
+  if(isObject(newValue)) {
+    for(let key in newValue) {
+      newValue[key] = await addFiles(`${path}/${key}`, oldValue?.[key], newValue[key]);
+    }
+    return newValue;
+  }
+  return newValue;
+}
+
+async function removeFiles(oldValue, newValue) {
+  if(oldValue?.storageId) {
+    if(newValue?.storageId != oldValue.storageId) {
+      await remove(oldValue.storageId);
+    }
+    return;
+  }
+  if(isObject(oldValue)) {
+    for(let key in oldValue) {
+      await removeFiles(oldValue[key], newValue?.[key]);
+    }
+  }
+}
+
+function clone(value) {
+  if (value == null) {
+    return value;
+  }
+  if (Array.isArray(value)) {
+    return value.map(clone);
+  }
+  if (typeof value == 'object') {
+    return Object.fromEntries(Object.entries(value).map(([key, val]) => [key, clone(val)]));
+  }
+  return value;
+}
+
 
 export default function (url, options = {}) {
 
@@ -116,7 +161,8 @@ export default function (url, options = {}) {
         value = Object.entries(value).sort((a, b) => a[0] < b[0] ? -1 : 1).map(([key, val]) => val);
       }
       isLoaded = true;
-      subscribers.forEach(callback => callback(value));
+      let cloneValue = clone(value);
+      subscribers.forEach(callback => callback(cloneValue));
     };
 
     if (!subscribers.length) {
@@ -125,7 +171,8 @@ export default function (url, options = {}) {
 
     subscribers.push(callback);
     if (value) {
-      callback(value);
+      let cloneValue = clone(value);
+      callback(cloneValue);
     }
 
     // TODO: This causes issues with svelte. 
@@ -150,7 +197,6 @@ export default function (url, options = {}) {
   };
 
   let set = async newValue => {
-    console.log('set', options.url, newValue);
     if (!isLoaded) {
       let existingSnap = await getValue(ref);
       if (existingSnap.exists()) {
@@ -232,39 +278,3 @@ export default function (url, options = {}) {
 
 }
 
-async function addFiles(path, oldValue, newValue) {
-  if(isFile(newValue)) {
-    let storageId = await upload('uploads', newValue.file, (storageId) => use(storageId));
-    return {
-      storageId: storageId,
-      folder: 'uploads',
-      file: null,
-    };
-  }
-  if(newValue?.storageId && newValue.storageId != oldValue?.storageId) {
-    await use(newValue.storageId);
-    return newValue;
-  }
-  if(isObject(newValue)) {
-    for(let key in newValue) {
-      newValue[key] = await addFiles(`${path}/${key}`, oldValue?.[key], newValue[key]);
-    }
-    return newValue;
-  }
-  return newValue;
-}
-
-async function removeFiles(oldValue, newValue) {
-  console.log('remove', oldValue, newValue);
-  if(oldValue?.storageId) {
-    if(newValue?.storageId != oldValue.storageId) {
-      await remove(oldValue.storageId);
-    }
-    return;
-  }
-  if(isObject(oldValue)) {
-    for(let key in oldValue) {
-      await removeFiles(oldValue[key], newValue?.[key]);
-    }
-  }
-}
