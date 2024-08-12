@@ -976,8 +976,8 @@ describe('Storage', function() {
     assert.ok(storageId);
     assert.equal(docData.useCount, 1);
 
-    metallica.name = "Metallica 2";
-    await database("metallica2").overwrite(metallica);
+    await database("metallica2").update({name: "Metallica 2"});
+    await database("metallica2").update({"file/name": "Fire"});
 
     wait(100);
 

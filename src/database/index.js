@@ -150,9 +150,10 @@ export default function (url, options = {}) {
   };
 
   let set = async newValue => {
+    console.log('set', options.url, newValue);
     if (!isLoaded) {
-      let existingValue = await getValue(ref);
-      if (existingValue.exists()) {
+      let existingSnap = await getValue(ref);
+      if (existingSnap.exists()) {
         console.error(`You're trying to set a value (${options.url}) before it has been loaded. If you're intentially doing this, use 'overwrite' instead.`);
         return;
       }
@@ -171,9 +172,14 @@ export default function (url, options = {}) {
         let snap = await getValue(ref);
         value = snap.val();
       }
-      newValue = await addFiles(options.url, JSON.stringify(value, null, 2), JSON.stringify(newValue, null, 2));
-      await removeFiles(value, newValue);
-      return updateValue(ref, newValue);
+      
+      let oldValue = value;
+      newValue = await addFiles(options.url, value, newValue);
+      await updateValue(ref, newValue);
+
+      let snap = await getValue(ref);
+      let updatedValue = snap.val();
+      await removeFiles(oldValue, updatedValue);
     }
   };
 
@@ -249,6 +255,7 @@ async function addFiles(path, oldValue, newValue) {
 }
 
 async function removeFiles(oldValue, newValue) {
+  console.log('remove', oldValue, newValue);
   if(oldValue?.storageId) {
     if(newValue?.storageId != oldValue.storageId) {
       await remove(oldValue.storageId);
