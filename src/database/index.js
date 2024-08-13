@@ -199,6 +199,7 @@ export default function (url, options = {}) {
   };
 
   let set = async newValue => {
+    console.log('set', url, newValue);
     if (!isLoaded) {
       let existingSnap = await getValue(ref);
       if (existingSnap.exists()) {

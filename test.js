@@ -759,7 +759,7 @@ describe('Storage', function() {
 
   });
 
-  it('will remove stored file on database remove', async function() {
+  it('will remove stored file deep in database', async function() {
 
     this.timeout(10000); // sets timeout to 10 seconds
 
@@ -780,15 +780,23 @@ describe('Storage', function() {
 
     const value = {
       name: "Fire Starter",
-      file: {
-        folder: 'uploads',
-        storageId: id,
+      artist: {
+        name: "Prodegy",
+        albumns: [
+          {
+            name: "Fat of the Land",
+            cover: {
+              folder: 'uploads',
+              storageId: id,
+            }
+          }
+        ]
       }
     };
 
     await set(ref(getDatabase(), "prodegy"), value);
 
-    await database("prodegy").remove();
+    await database("prodegy/artist/albumns").remove();
 
     await wait(1000);
 
@@ -805,9 +813,18 @@ describe('Storage', function() {
       assert.equal(error.code, 'storage/object-not-found');
     }
 
+    let newValue = await database("prodegy");
+
+    assert.deepEqual(newValue, {
+      name: "Fire Starter",
+      artist: {
+        name: "Prodegy",
+      }
+    });
+
   });
 
-  it('will remove stored file on database remove 2', async function() {
+  it('will remove stored file on database remove', async function() {
 
     this.timeout(10000); // sets timeout to 10 seconds
 
@@ -1107,9 +1124,13 @@ describe('Storage', function() {
       assert.equal(error.code, 'storage/object-not-found');
     }
 
+    let newValue = await database("prodegy");
+
+    assert.equal(newValue.file, undefined);
+
   });
 
-  it.only('works with mutated values', function(done) {
+  it('works with mutated values', function(done) {
 
     this.timeout(30000); // sets timeout to 10 seconds
 
