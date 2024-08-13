@@ -30,7 +30,7 @@ export default function (folder = "uploads") {
 
 export async function url(folder, id) {
   if(typeof folder == "object") {
-    id = folder.storageId;
+    id = folder.storageId || folder.id;
     folder = folder.folder;
   }
   try {
