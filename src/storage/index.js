@@ -36,6 +36,9 @@ export async function url(folder, id) {
     id = folder?.storageId || folder?.id;
     folder = folder.folder;
   }
+  if(!folder || !id) {
+    return "";
+  }
   try {
     let url = await getDownloadURL(ref(getStorage(), `${folder}/${id}`));
     return url;
