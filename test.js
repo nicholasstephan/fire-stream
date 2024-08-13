@@ -468,8 +468,8 @@ describe('Database', function() {
 
     const value = "Fight fire with fire";
     
-    await database("metallica").update(value);  
-    
+    await database("metallica").overwrite(value);  
+
     let snap = await get(ref(getDatabase(), "metallica"));
     
     assert.equal(snap.val(), value);
@@ -589,33 +589,38 @@ describe('Storage', function() {
     
   });
 
-  it('can write to storage', async function() {
+  it('can write to storage', function(done) {
+    this.timeout(10000); // sets timeout to 10 seconds
+
     const data = new Uint8Array([0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x2c, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64, 0x21]);
 
-    let id = await storage().upload(data, async () => {
+    let id = storage().upload(data, async (id) => {
 
       let url = await getDownloadURL(storageRef(getStorage(), `/uploads/${id}`));
       assert.ok(url);
-      
+
       let result = await fetch(url).then(res => res.text());
       
       assert.strictEqual(new TextDecoder().decode(data), result);
 
+      done();
     });
 
     assert.ok(id);
   });
 
-  it('can creates associated file in firestore', async function() {
+  it('can creates associated file in firestore', function() {
     const data = new Uint8Array([0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x2c, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64, 0x21]);
 
-    let id = storage().upload(data, async () => {
+    let id = storage().upload(data, async (id) => {
       let snap = await getDoc(doc(getFirestore(), "files", id));
       let snapData = snap.data();
 
       assert.equal(snapData.location, `uploads/${id}`);
       assert.equal(snapData.folder, 'uploads');
       assert.equal(snapData.useCount, 0);
+
+      done();
     });
 
     assert.ok(id);
@@ -693,7 +698,7 @@ describe('Storage', function() {
       }
     };
 
-    await database("file").set(data);
+    database("file").overwrite(data);
 
     await wait(1000);
 
@@ -899,7 +904,7 @@ describe('Storage', function() {
 
     await set(ref(getDatabase(), "prodegy"), value);
 
-    await database("prodegy").overwrite({
+    database("prodegy").overwrite({
       name: "Fire Starter",
       file: {
         file: data

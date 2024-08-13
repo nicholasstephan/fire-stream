@@ -44,9 +44,9 @@ const noop = (startWith = null) => ({
   add: () => null,
 });
 
-async function addFiles(path, oldValue, newValue) {
+function addFiles(path, oldValue, newValue) {
   if(isFile(newValue)) {
-    let storageId = await upload('uploads', newValue.file, (storageId) => use(storageId));
+    let storageId = upload('uploads', newValue.file, (storageId) => use(storageId));
     return {
       storageId: storageId,
       folder: 'uploads',
@@ -54,12 +54,12 @@ async function addFiles(path, oldValue, newValue) {
     };
   }
   if(newValue?.storageId && newValue.storageId != oldValue?.storageId) {
-    await use(newValue.storageId);
+    use(newValue.storageId);
     return newValue;
   }
   if(isObject(newValue)) {
     for(let key in newValue) {
-      newValue[key] = await addFiles(`${path}/${key}`, oldValue?.[key], newValue[key]);
+      newValue[key] = addFiles(`${path}/${key}`, oldValue?.[key], newValue[key]);
     }
     return newValue;
   }
@@ -73,14 +73,14 @@ async function removeFiles(oldValue, newValue) {
         await remove(oldValue.storageId);
       }
       catch(e) {
-        console.log('Error removing file', e);
+        console.log('Error removing file', oldValue.storageId, e);
       }
     }
     return;
   }
   if(isObject(oldValue)) {
     for(let key in oldValue) {
-      await removeFiles(oldValue[key], newValue?.[key]);
+      removeFiles(oldValue[key], newValue?.[key]);
     }
   }
 }
@@ -198,18 +198,15 @@ export default function (url, options = {}) {
     return value;
   };
 
-  let set = async newValue => {
-    console.log('set', url, newValue);
+  let set = newValue => {
     if (!isLoaded) {
-      let existingSnap = await getValue(ref);
-      if (existingSnap.exists()) {
-        console.error(`You're trying to set a value (${options.url}) before it has been loaded. If you're intentially doing this, use 'overwrite' instead.`);
-        return;
-      }
+      console.error(`You're trying to set a value (${options.url}) before it has been loaded. If you're intentially doing this, use 'overwrite' instead.`);
+      return;
     }
-    newValue = await addFiles(options.url, value, newValue);
-    await removeFiles(value, newValue);
-    return setValue(ref, newValue);
+    newValue = addFiles(options.url, value, newValue);
+    removeFiles(value, newValue);
+    let res = setValue(ref, newValue);
+    return res;
   };
 
   let update = async newValue => {
@@ -217,18 +214,18 @@ export default function (url, options = {}) {
       return set(newValue);
     }
     else {
-      if(!value) {
+      if (!isLoaded) {
         let snap = await getValue(ref);
         value = snap.val();
       }
       
       let oldValue = value;
-      newValue = await addFiles(options.url, value, newValue);
+      newValue = addFiles(options.url, oldValue, newValue);
       await updateValue(ref, newValue);
 
       let snap = await getValue(ref);
       let updatedValue = snap.val();
-      await removeFiles(oldValue, updatedValue);
+      removeFiles(oldValue, updatedValue);
     }
   };
 
@@ -236,7 +233,7 @@ export default function (url, options = {}) {
     let snap = await getValue(ref);
     value = snap.val();
     isLoaded = true;
-    return set(newValue);
+    await set(newValue);
   };
 
   let remove = async () => {
@@ -250,6 +247,7 @@ export default function (url, options = {}) {
   };
 
   let push = val => {
+    // todo: parse for files.
     let res = pushValue(ref, val);
     return res.key;
   };

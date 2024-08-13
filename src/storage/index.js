@@ -11,7 +11,7 @@ import {
   collection,
   doc,
   getDoc,
-  addDoc,
+  setDoc,
   updateDoc,
   serverTimestamp,
   deleteField,
@@ -21,7 +21,7 @@ import {
 
 export default function (folder = "uploads") {
   return {
-    upload: e => upload(folder, e),
+    upload: (e, callback) => upload(folder, e, callback),
     remove: id => remove(id),
     url: id => url(folder, id),
     use: id => use(id),
@@ -45,7 +45,7 @@ export async function url(folder, id) {
   }
 }
 
-export async function upload(folder, files, callback) {
+export function upload(folder, files, callback) {
   if (!files) {
     console.warn("A file upload requires a file.");
     return;
@@ -66,7 +66,9 @@ export async function upload(folder, files, callback) {
 
   for (let file of files) {
 
-    let fileDoc = await addDoc(filesCol, {
+    let fileDoc = doc(filesCol);
+
+    setDoc(fileDoc, {
       dateCreated: serverTimestamp(),
       folder: folder,
       name: file.name || null,
