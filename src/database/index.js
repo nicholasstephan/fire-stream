@@ -93,7 +93,6 @@ function clone(value) {
   return value;
 }
 
-
 export default function (url, options = {}) {
 
   if (typeof url == 'string') {
@@ -141,8 +140,6 @@ export default function (url, options = {}) {
   if (constraints.length) {
     ref = query(ref, ...constraints);
   }
-
-  // Manage subscriptions.
 
   let subscribers = [];
   let value = options.startWith;

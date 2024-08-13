@@ -33,6 +33,9 @@ export function url(folder, id) {
     id = folder.storageId;
     folder = folder.folder;
   }
+  if(!folder || !id) {
+    return "";
+  }
   return getDownloadURL(ref(getStorage(), `${folder}/${id}`));
 }
 
