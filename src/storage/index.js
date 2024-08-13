@@ -28,15 +28,17 @@ export default function (folder = "uploads") {
   };
 };
 
-export function url(folder, id) {
+export async function url(folder, id) {
   if(typeof folder == "object") {
     id = folder.storageId;
     folder = folder.folder;
   }
-  if(!folder || !id) {
+  try {
+    return await getDownloadURL(ref(getStorage(), `${folder}/${id}`));
+  }
+  catch(e) {
     return "";
   }
-  return getDownloadURL(ref(getStorage(), `${folder}/${id}`));
 }
 
 export async function upload(folder, files, callback) {
