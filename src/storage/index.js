@@ -29,12 +29,13 @@ export default function (folder = "uploads") {
 };
 
 export async function url(folder, id) {
-  if(typeof folder == "object") {
-    id = folder.storageId || folder.id;
+  if(typeof folder === "object") {
+    id = folder?.storageId || folder?.id;
     folder = folder.folder;
   }
   try {
-    return await getDownloadURL(ref(getStorage(), `${folder}/${id}`));
+    let url = await getDownloadURL(ref(getStorage(), `${folder}/${id}`));
+    return url;
   }
   catch(e) {
     return "";

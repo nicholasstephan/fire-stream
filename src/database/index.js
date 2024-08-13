@@ -69,7 +69,12 @@ async function addFiles(path, oldValue, newValue) {
 async function removeFiles(oldValue, newValue) {
   if(oldValue?.storageId) {
     if(newValue?.storageId != oldValue.storageId) {
-      await remove(oldValue.storageId);
+      try {
+        await remove(oldValue.storageId);
+      }
+      catch(e) {
+        console.log('Error removing file', e);
+      }
     }
     return;
   }
