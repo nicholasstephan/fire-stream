@@ -29,9 +29,12 @@ export default function (folder = "uploads") {
 };
 
 export async function url(folder, id) {
-  if(typeof folder === "object") {
+  if(!folder) {
+    return "";
+  }
+  if(folder?.folder) {
     id = folder?.storageId || folder?.id;
-    folder = folder?.folder;
+    folder = folder.folder;
   }
   try {
     let url = await getDownloadURL(ref(getStorage(), `${folder}/${id}`));
