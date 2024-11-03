@@ -16,7 +16,7 @@ global.atob = window.atob;
 import firestore from "./src/firestore/index.js";
 import database from "./src/database/index.js";
 import storage from "./src/storage/index.js";
-import auth, { resetAuth } from "./src/auth/index.js";
+import auth from "./src/auth/index.js";
 
 initializeApp({
   apiKey: "AIzaSyBWUF4koDWXY5EZiPB7L-PrzCGtqm9ARCs",
@@ -1209,22 +1209,21 @@ describe('Auth', function() {
 
   it('shows as logged out', async function() {
     this.timeout(10000); // sets timeout to 10 seconds
-    resetAuth();
+    await auth.logout();
 
     const callback = sinon.spy();
     auth.subscribe(callback);
 
     await wait(1000);
 
-    assert.equal(callback.callCount, 1);
-    // assert.equal(callback.getCall(0).args[0], undefined);
-    // assert.equal(callback.getCall(1).args[0], false);
+    // first call is 'false' as user is logged out
+    assert.equal(callback.callCount, 1); 
     assert.equal(callback.getCall(0).args[0], false);
   });
 
   it('can register', async function() {
     this.timeout(10000); // sets timeout to 10 seconds
-    resetAuth();
+    await auth.logout()
 
     await auth.register('alberto.rvx@gmail.com', 'testing');
     let user = auth.get();
@@ -1236,7 +1235,7 @@ describe('Auth', function() {
 
   it('can log out and back in', async function() {
     this.timeout(10000); // sets timeout to 10 seconds
-    resetAuth();
+    await auth.logout();
     
     let email = 'alberto.rvx+2@gmail.com'
 
@@ -1258,47 +1257,74 @@ describe('Auth', function() {
 
   it('can subscribe to user status', async function() {
     this.timeout(10000); // sets timeout to 10 seconds
-    resetAuth();
+    await auth.logout();
 
     const callback = sinon.spy();
     const email = 'alberto.rvx+3@gmail.com';
 
     auth.subscribe(callback);
     
+    // first call is 'false' as user is logged out
+
     await auth.register(email, 'testing');
     await wait(100);
-    assert.equal(callback.callCount, 1);
-    assert.equal(callback.getCall(0).args[0].email, email);
+    assert.equal(callback.callCount, 2);
+    assert.equal(callback.getCall(1).args[0].email, email);
     
     await auth.logout();
     await wait(100);
-    assert.equal(callback.callCount, 2);
-    assert.equal(callback.getCall(1).args[0], false);
+    assert.equal(callback.callCount, 3);
+    assert.equal(callback.getCall(2).args[0], false);
     
     await auth.login(email, 'testing');
     await wait(100);
-    assert.equal(callback.callCount, 3);
-    assert.equal(callback.getCall(2).args[0].email, email);
+    assert.equal(callback.callCount, 4);
+    assert.equal(callback.getCall(3).args[0].email, email);
   });
 
   it('can subscribe to user info', async function() {
     this.timeout(10000); // sets timeout to 10 seconds
-    resetAuth();
+    await auth.logout();
 
     const callback = sinon.spy();
     const email = 'alberto.rvx+4@gmail.com';
 
     auth.subscribe(callback);
+
+    // first call should be 'false' as user is logged out
     
     await auth.register(email, 'testing');
     await wait(100);
-    assert.equal(callback.callCount, 1);
-    assert.equal(callback.getCall(0).args[0].email, email);
+    assert.equal(callback.callCount, 2); 
+    assert.equal(callback.getCall(1).args[0].email, email);
     
     auth.set({name: 'Alberto'});
     await wait(100);
-    assert.equal(callback.callCount, 2);
-    assert.equal(callback.getCall(1).args[0].name, "Alberto");
+    assert.equal(callback.callCount, 3);
+    assert.equal(callback.getCall(2).args[0].name, "Alberto");
+  });
+
+  it('can await user info', async function() {
+    this.timeout(10000); // sets timeout to 10 seconds
+    await auth.logout();
+    
+    const email = 'alberto.rvx+5@gmail.com';
+    
+    let userId = await auth.register(email, 'testing');
+    auth.set({
+      id: userId,
+      email: email,
+      name: 'Alberto'
+    });
+    
+    await auth.logout();
+
+    auth.then(user => {
+      assert.equal(user.name, "Alberto");
+      assert.equal(user.email, email);
+    });
+
+    auth.login(email, 'testing');
   });
 
 });

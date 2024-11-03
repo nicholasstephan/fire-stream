@@ -97,7 +97,7 @@ export default function doc(options = {}) {
     if(!isLoaded) {
       let existingValue = await getDoc(ref);
       if(existingValue.exists) {
-        console.warn(`WARNING: You're trying to set a document (${url}) before it has been loaded.`);
+        console.warn(`You're trying to set a document (${url}) before it has been loaded.`);
         return;
       }
     }

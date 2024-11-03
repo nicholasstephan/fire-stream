@@ -21,7 +21,7 @@ let userId = undefined; // undefined until we know the user status
 let user = undefined;   // either the user object or false if not logged in
 
 function emit() {
-  if (user === undefined) return;
+  if (userId === undefined) return;
   while (resolvers.length) {
     resolvers.shift()?.(get());
   }
@@ -41,27 +41,29 @@ let init = () => {
       offSnapshot = undefined;
     }
 
-    if (data?.uid) {
+    // If the user is newly logged in, subscribe to their user document,
+    // and emit the new user object to all subscribers.
+    if (data?.uid && !userId) {
       userId = data.uid;
       offSnapshot = onSnapshot(doc(getFirestore(), `users/${userId}`), snap => {
         user = snap.data();
         emit();
       });
     }
-    else {
+
+    // If the user is newly logged out, 
+    // emit a logged out state to all subscribers.
+    if(userId !== false && !data?.uid) {
       userId = false;
       user = false;
       emit();
     }
-
   });
 }
 
 function subscribe(callback) {
   subscribers.push(callback);
-  if (user !== undefined) {
-    emit();
-  }
+  emit();
   init();
   return () => subscribers = subscribers.filter(cb => cb != callback);
 }
@@ -77,11 +79,6 @@ function get() {
   return {id:userId, ...user};
 }
 
-export function resetAuth() {
-  userId = undefined;
-  user = undefined;
-}
-
 export async function login(email, password) {
   let auth = await signInWithEmailAndPassword(getAuth(), email, password);
   userId = auth.user.uid;
@@ -89,11 +86,10 @@ export async function login(email, password) {
     dateLastLogin: (new Date()).toISOString(),
   };
   await updateDoc(doc(getFirestore(), `users/${userId}`), user);
+  init();
 }
 
 export async function logout() {
-  userId = false;
-  user = false;
   return signOut(getAuth());
 }
 
@@ -113,4 +109,13 @@ export async function resetPassword(email) {
   return sendPasswordResetEmail(getAuth(), email);
 }
 
-export default { subscribe, set, get, login, logout, register, resetPassword };
+export function then(callback) {
+  if(userId && user) {
+    callback({id:userId, ...user});
+    return;
+  }
+  resolvers.push(callback);
+  init();
+}
+
+export default { subscribe, set, get, login, logout, register, resetPassword, then };

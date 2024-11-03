@@ -73,7 +73,7 @@ async function removeFiles(oldValue, newValue) {
         await remove(oldValue.storageId);
       }
       catch(e) {
-        console.log('Error removing file', oldValue.storageId, e);
+        console.warn('Could not remove file:', oldValue.storageId, e);
       }
     }
     return;
