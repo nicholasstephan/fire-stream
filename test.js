@@ -487,15 +487,17 @@ describe('Database', function() {
   });
 
   it('returns null if no startWith value is given', async function() {
-    let data = await database("undefined");
+    let data = await database("/no/value/here");
     assert.equal(data, null);
   });
 
   it('returns null for subscribers if no startWith value is given', async function() {
     const callback = sinon.spy();
-    database("undefined").subscribe(callback);
+    database("/no/value/here").subscribe(callback);
+    await wait(100);
     assert.equal(callback.callCount, 1);
     assert.equal(callback.getCall(0).args[0], null);
+    
   });
 
   it('can read a value', async function() {

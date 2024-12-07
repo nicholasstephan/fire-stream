@@ -158,7 +158,7 @@ export default function (url, options = {}) {
       if (value == null && options.startWith != null) {
         value = options.startWith;
       }
-      if (typeof value == 'object' && typeof options.startWith == 'object') {
+      if (value && options.startWith && typeof value == 'object' && typeof options.startWith == 'object') {
         value = { ...options.startWith, ...value };
       }
       if (options.array) {
@@ -166,7 +166,9 @@ export default function (url, options = {}) {
       }
       isLoaded = true;
       let cloneValue = clone(value);
-      subscribers.forEach(callback => callback(cloneValue));
+      subscribers.forEach(callback => {
+        callback(cloneValue);
+      });
     };
 
     if (!subscribers.length) {
