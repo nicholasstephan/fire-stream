@@ -32,9 +32,12 @@ export async function url(folder, id) {
   if(!folder) {
     return "";
   }
-  if(folder?.folder) {
+  if (folder instanceof File) {
+    return URL.createObjectURL(folder);
+  }
+  if(folder && !id) {
     id = folder?.storageId || folder?.id;
-    folder = folder.folder;
+    folder = folder?.folder;
   }
   if(!folder || !id) {
     return "";
