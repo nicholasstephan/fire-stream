@@ -35,6 +35,9 @@ export async function url(folder, id) {
   if (folder instanceof File) {
     return URL.createObjectURL(folder);
   }
+  if (folder.file instanceof File) {
+    return URL.createObjectURL(folder.file);
+  }
   if(folder && !id) {
     id = folder?.storageId || folder?.id;
     folder = folder?.folder;
