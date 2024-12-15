@@ -93,13 +93,14 @@ export async function logout() {
   return signOut(getAuth());
 }
 
-export async function register(email, password) {
+export async function register(email, password, data={}) {
   let auth = await createUserWithEmailAndPassword(getAuth(), email, password);
   userId = auth.user.uid;
   user = {
     email,
     dateCreated: (new Date()).toISOString(),
     dateLastLogin: (new Date()).toISOString(),
+    ...data,
   };
   await setDoc(doc(getFirestore(), `users/${userId}`), user);
   return userId;
