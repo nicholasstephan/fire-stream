@@ -114,14 +114,12 @@ export async function resetPassword(email) {
   return sendPasswordResetEmail(getAuth(), email);
 }
 
-export async function changeEmail(password, email) {
-  await reauth(password);
+export async function changeEmail(email) {
   await updateEmail(getAuth().currentUser, email);
   await set({email});
 }
 
-export async function changePassword(currentPassword, newPassword) {
-  await reauth(currentPassword);
+export async function changePassword(newPassword) {
   return updatePassword(getAuth().currentUser, newPassword);
 }
 

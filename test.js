@@ -1344,11 +1344,11 @@ describe('Auth', function() {
   it('can change password', async function() {
     await auth.logout();
 
-    const email = 'alberto.rvx+5@gmail.com';
+    const email = 'alberto.rvx+8@gmail.com';
 
     let userId = await auth.register(email, 'testing');
 
-    await changePassword('testing', 'testing2');
+    await changePassword('testing2');
     
     await auth.logout();
     
@@ -1380,7 +1380,7 @@ describe('Auth', function() {
 
     await auth.register(email, 'testing');
 
-    await changeEmail('testing', newEmail);
+    await changeEmail(newEmail);
 
     let user = await auth;
     assert.equal(user.email, newEmail);
