@@ -16,7 +16,7 @@ global.atob = window.atob;
 import firestore from "./src/firestore/index.js";
 import database from "./src/database/index.js";
 import storage from "./src/storage/index.js";
-import auth from "./src/auth/index.js";
+import auth, { changePassword, changeEmail } from "./src/auth/index.js";
 
 initializeApp({
   apiKey: "AIzaSyBWUF4koDWXY5EZiPB7L-PrzCGtqm9ARCs",
@@ -1339,6 +1339,52 @@ describe('Auth', function() {
     });
 
     auth.login(email, 'testing');
+  });
+
+  it('can change password', async function() {
+    await auth.logout();
+
+    const email = 'alberto.rvx+5@gmail.com';
+
+    let userId = await auth.register(email, 'testing');
+
+    await changePassword('testing', 'testing2');
+    
+    await auth.logout();
+    
+    try {
+      await auth.login(email, 'testing');
+    }
+    catch(error) {
+      assert.equal(error.code, 'auth/wrong-password');
+    }
+
+    try {
+      await auth.login(email, 'testing2');
+    }
+    catch(error) {
+      console.log('wrong password')
+    }
+
+    let user = await auth;
+
+    assert.equal(user.id, userId);
+  });
+
+  it('can change email address', async function() {
+
+    await auth.logout();
+
+    const email = 'alberto.rvx+6@gmail.com';
+    const newEmail = 'alberto.rvx+7@gmail.com';
+
+    await auth.register(email, 'testing');
+
+    await changeEmail('testing', newEmail);
+
+    let user = await auth;
+    assert.equal(user.email, newEmail);
+
   });
 
 });

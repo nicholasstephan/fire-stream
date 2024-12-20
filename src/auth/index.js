@@ -4,7 +4,11 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut,
-  sendPasswordResetEmail
+  sendPasswordResetEmail,
+  updateEmail,
+  updatePassword,
+  reauthenticateWithCredential,
+  EmailAuthProvider,
 } from "firebase/auth";
 
 import {
@@ -71,7 +75,7 @@ function subscribe(callback) {
 function set(data) {
   if (!userId) return;
   let {id, ...update} = data;
-  updateDoc(doc(getFirestore(), `users/${userId}`), update);
+  return updateDoc(doc(getFirestore(), `users/${userId}`), update);
 }
 
 function get() {
@@ -108,6 +112,25 @@ export async function register(email, password, data={}) {
 
 export async function resetPassword(email) {
   return sendPasswordResetEmail(getAuth(), email);
+}
+
+export async function changeEmail(password, email) {
+  await reauth(password);
+  await updateEmail(getAuth().currentUser, email);
+  await set({email});
+}
+
+export async function changePassword(currentPassword, newPassword) {
+  await reauth(currentPassword);
+  return updatePassword(getAuth().currentUser, newPassword);
+}
+
+export function reauth(password) {
+  const credential = EmailAuthProvider.credential(
+    getAuth().currentUser.email,
+    password
+  );
+  return reauthenticateWithCredential(getAuth().currentUser, credential);
 }
 
 export function then(callback) {
